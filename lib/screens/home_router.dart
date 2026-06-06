@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 import '../core/storage/token_storage.dart';
+import '../l10n/app_localizations.dart';
 
 /// User role constants for type-safe role checking
 class UserRoles {
   UserRoles._(); // Private constructor to prevent instantiation
   
-  static const String mechanic = 'mechanic';
   static const String user = 'user';
+  static const String mechanic = 'mechanic'; // Keep for validation, but not used
 }
 
-/// Production-safe authentication router with proper lifecycle handling
+/// Production-safe authentication router (USER APP ONLY)
 /// 
 /// Features:
 /// - Post-frame navigation (prevents timing issues)
-/// - Role-based routing with fallback handling
+/// - User-only routing with mechanic rejection
 /// - Theme-aware loading indicator
 /// - Proper error handling for corrupted/unknown roles
 class HomeRouter extends StatefulWidget {
@@ -45,16 +46,8 @@ class _HomeRouterState extends State<HomeRouter> {
       return;
     }
 
-    // Role-based routing with fallback for unknown roles
+    // Role-based routing (USER-ONLY APP)
     switch (role) {
-      case UserRoles.mechanic:
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/mechanic_root',
-          (_) => false,
-        );
-        break;
-
       case UserRoles.user:
         Navigator.pushNamedAndRemoveUntil(
           context,
@@ -63,25 +56,74 @@ class _HomeRouterState extends State<HomeRouter> {
         );
         break;
 
+      case UserRoles.mechanic:
+        // Mechanic tried to log in to user app → Show error and redirect to login
+        if (mounted) {
+          await _showMechanicError();
+        }
+        await TokenStorage.clear();
+        if (mounted) {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/login',
+            (_) => false,
+          );
+        }
+        break;
+
       default:
         // Unknown/corrupted role → Clear auth and redirect to login
         await TokenStorage.clear();
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/login',
-          (_) => false,
-        );
+        if (mounted) {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/login',
+            (_) => false,
+          );
+        }
     }
+  }
+
+  Future<void> _showMechanicError() async {
+    final l10n = AppLocalizations.of(context)!;
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.wrongApp),
+        content: Text(l10n.wrongAppMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.ok),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     
     return Scaffold(
       body: Center(
-        child: CircularProgressIndicator(
-          color: scheme.primary,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(
+              color: scheme.primary,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              l10n.loading,
+              style: TextStyle(
+                color: scheme.onSurface.withOpacity(0.6),
+                fontSize: 14,
+              ),
+            ),
+          ],
         ),
       ),
     );

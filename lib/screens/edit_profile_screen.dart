@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../l10n/app_localizations.dart';
+import '../services/auth_service.dart';
+import '../services/firestore_service.dart';
 import '../utils/snackbar_helper.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -13,6 +16,12 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  
+  final AuthService _auth = AuthService();
+  final FirestoreService _firestore = FirestoreService();
+  
+  bool _isLoading = true;
+  bool _isSaving = false;
 
   // PRIMARY INFO
   final _nameC = TextEditingController();
@@ -20,20 +29,16 @@ class _EditProfileScreenState extends State<EditProfileScreen>
   final _phoneC = TextEditingController();
   final _dobC = TextEditingController();
 
-  String _gender = "Male";
-  List<String> _languages = ["English"];
+  String? _gender; // Made nullable
+  List<String> _languages = [];
 
   // OTHER INFO
   final _pincodeC = TextEditingController();
   final _cityC = TextEditingController();
-  String _state = "Karnataka";
+  String? _state; // Made nullable
 
-  // SETTINGS (account-specific only)
-  bool _emailNotifications = true;
-  bool _smsNotifications = false;
+  // SETTINGS (only essential for emergency app)
   bool _serviceReminders = true;
-  bool _promotionalOffers = false;
-  bool _twoFactorAuth = false;
   bool _biometricLogin = false;
 
   final List<String> _languagesList = [
@@ -77,10 +82,234 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     "West Bengal",
   ];
 
+  // Get localized language names
+  List<String> _getLocalizedLanguages(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return [
+      l10n.langEnglish,
+      l10n.langHindi,
+      l10n.langKannada,
+      l10n.langTamil,
+      l10n.langTelugu,
+      l10n.langMalayalam,
+      l10n.langBengali,
+      l10n.langMarathi,
+      l10n.langGujarati,
+      l10n.langPunjabi,
+      l10n.langOdia,
+      l10n.langUrdu,
+    ];
+  }
+
+  // Get localized name for a single language (by English key)
+  String _getLocalizedLanguageName(String languageKey, BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    
+    switch (languageKey) {
+      case "English":
+        return l10n.langEnglish;
+      case "Hindi":
+        return l10n.langHindi;
+      case "Kannada":
+        return l10n.langKannada;
+      case "Tamil":
+        return l10n.langTamil;
+      case "Telugu":
+        return l10n.langTelugu;
+      case "Malayalam":
+        return l10n.langMalayalam;
+      case "Bengali":
+        return l10n.langBengali;
+      case "Marathi":
+        return l10n.langMarathi;
+      case "Gujarati":
+        return l10n.langGujarati;
+      case "Punjabi":
+        return l10n.langPunjabi;
+      case "Odia":
+        return l10n.langOdia;
+      case "Urdu":
+        return l10n.langUrdu;
+      default:
+        return languageKey;
+    }
+  }
+
+  // Get localized state names
+  List<String> _getLocalizedStates(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return [
+      l10n.stateAndaman,
+      l10n.stateAndhra,
+      l10n.stateArunachal,
+      l10n.stateAssam,
+      l10n.stateBihar,
+      l10n.stateChandigarh,
+      l10n.stateChhattisgarh,
+      l10n.stateDelhi,
+      l10n.stateGoa,
+      l10n.stateGujarat,
+      l10n.stateHaryana,
+      l10n.stateHimachal,
+      l10n.stateJharkhand,
+      l10n.stateKarnataka,
+      l10n.stateKerala,
+      l10n.stateMadhya,
+      l10n.stateMaharashtra,
+      l10n.statePunjab,
+      l10n.stateRajasthan,
+      l10n.stateTamilNadu,
+      l10n.stateTelangana,
+      l10n.stateUttar,
+      l10n.stateWestBengal,
+    ];
+  }
+
+  // Get localized name for a single state (by English key)
+  String _getLocalizedStateName(String stateKey, BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    
+    // Debug: Check current locale
+    debugPrint('🌍 Current locale: ${l10n.localeName}');
+    debugPrint('🗺️ Looking up state: "$stateKey"');
+    
+    // Trim whitespace and normalize the key for comparison
+    final normalizedKey = stateKey.trim();
+    
+    // Direct mapping ensures we always get the correct localized name
+    String result;
+    switch (normalizedKey) {
+      case "Andaman & Nicobar Islands":
+        result = l10n.stateAndaman;
+        break;
+      case "Andhra Pradesh":
+        result = l10n.stateAndhra;
+        break;
+      case "Arunachal Pradesh":
+        result = l10n.stateArunachal;
+        break;
+      case "Assam":
+        result = l10n.stateAssam;
+        break;
+      case "Bihar":
+        result = l10n.stateBihar;
+        break;
+      case "Chandigarh":
+        result = l10n.stateChandigarh;
+        break;
+      case "Chhattisgarh":
+        result = l10n.stateChhattisgarh;
+        break;
+      case "Delhi":
+        result = l10n.stateDelhi;
+        break;
+      case "Goa":
+        result = l10n.stateGoa;
+        break;
+      case "Gujarat":
+        result = l10n.stateGujarat;
+        break;
+      case "Haryana":
+        result = l10n.stateHaryana;
+        break;
+      case "Himachal Pradesh":
+        result = l10n.stateHimachal;
+        break;
+      case "Jharkhand":
+        result = l10n.stateJharkhand;
+        break;
+      case "Karnataka":
+        result = l10n.stateKarnataka;
+        break;
+      case "Kerala":
+        result = l10n.stateKerala;
+        break;
+      case "Madhya Pradesh":
+        result = l10n.stateMadhya;
+        break;
+      case "Maharashtra":
+        result = l10n.stateMaharashtra;
+        break;
+      case "Punjab":
+        result = l10n.statePunjab;
+        break;
+      case "Rajasthan":
+        result = l10n.stateRajasthan;
+        break;
+      case "Tamil Nadu":
+        result = l10n.stateTamilNadu;
+        break;
+      case "Telangana":
+        result = l10n.stateTelangana;
+        break;
+      case "Uttar Pradesh":
+        result = l10n.stateUttar;
+        break;
+      case "West Bengal":
+        result = l10n.stateWestBengal;
+        break;
+      default:
+        // Debug: print what key we couldn't find
+        debugPrint('⚠️ State key not found in localization: "$normalizedKey"');
+        result = stateKey; // Fallback to English key if not found
+    }
+    
+    debugPrint('✅ Returning localized state: "$result"');
+    return result;
+  }
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _loadProfileData();
+  }
+
+  /// Load existing profile data from Firestore
+  Future<void> _loadProfileData() async {
+    try {
+      final profile = await _auth.getMyProfile();
+      
+      if (profile != null && mounted) {
+        setState(() {
+          // Primary Info
+          _nameC.text = (profile['name'] ?? '').toString();
+          _emailC.text = (profile['email'] ?? '').toString();
+          _phoneC.text = (profile['phone'] ?? '').toString();
+          _gender = profile['gender']?.toString();
+          
+          // Languages - handle both List and String
+          if (profile['languages'] is List) {
+            _languages = List<String>.from(profile['languages']);
+          } else if (profile['languages'] is String) {
+            final langStr = profile['languages'].toString();
+            _languages = langStr.isNotEmpty 
+                ? langStr.split(',').map((e) => e.trim()).toList()
+                : [];
+          }
+          
+          _dobC.text = (profile['dob'] ?? '').toString();
+          
+          // Other Info
+          _pincodeC.text = (profile['pincode'] ?? '').toString();
+          _cityC.text = (profile['city'] ?? '').toString();
+          _state = profile['state']?.toString();
+          
+          // Settings
+          _serviceReminders = profile['serviceReminders'] ?? true;
+          _biometricLogin = profile['biometricLogin'] ?? false;
+          
+          _isLoading = false;
+        });
+      } else if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        SnackBarHelper.showError(context, "${AppLocalizations.of(context)!.failedToLoadProfile}: $e");
+      }
+    }
   }
 
   @override
@@ -99,11 +328,14 @@ class _EditProfileScreenState extends State<EditProfileScreen>
   // LANGUAGE SELECTOR
   // ------------------------------------------------------------------
   void _openLanguageSelector() {
+    final localizedLanguages = _getLocalizedLanguages(context);
+    
     showDialog(
       context: context,
       builder: (_) => _LanguageDialog(
         initial: List.from(_languages),
-        allLanguages: _languagesList,
+        allLanguagesKeys: _languagesList,
+        allLanguagesDisplay: localizedLanguages,
         onSave: (selected) {
           setState(() => _languages = selected);
         },
@@ -115,11 +347,14 @@ class _EditProfileScreenState extends State<EditProfileScreen>
   // STATE SELECTOR
   // ------------------------------------------------------------------
   void _openStateSelector() {
+    final localizedStates = _getLocalizedStates(context);
+    
     showDialog(
       context: context,
       builder: (_) => _StateDialog(
-        initial: _state,
-        allStates: _states,
+        initialKey: _state ?? _states.first,
+        allStatesKeys: _states,
+        allStatesDisplay: localizedStates,
         onSave: (selected) {
           setState(() => _state = selected);
         },
@@ -147,22 +382,118 @@ class _EditProfileScreenState extends State<EditProfileScreen>
   }
 
   // ------------------------------------------------------------------
+  // SAVE PROFILE (PRIMARY + OTHER INFO)
+  // ------------------------------------------------------------------
+  Future<void> _savePrimaryAndOtherInfo() async {
+    final l10n = AppLocalizations.of(context)!;
+    
+    // Validate required fields
+    if (_nameC.text.trim().isEmpty) {
+      SnackBarHelper.showError(context, l10n.nameRequired);
+      return;
+    }
+    
+    if (_phoneC.text.trim().isEmpty) {
+      SnackBarHelper.showError(context, l10n.phoneRequired);
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      // Prepare data - only send non-empty values
+      await _firestore.updateCompleteUserProfile(
+        name: _nameC.text.trim(),
+        email: _emailC.text.trim().isNotEmpty ? _emailC.text.trim() : null,
+        phone: _phoneC.text.trim(),
+        gender: _gender,
+        languages: _languages.isNotEmpty ? _languages : null,
+        dob: _dobC.text.trim().isNotEmpty ? _dobC.text.trim() : null,
+        pincode: _pincodeC.text.trim().isNotEmpty ? _pincodeC.text.trim() : null,
+        city: _cityC.text.trim().isNotEmpty ? _cityC.text.trim() : null,
+        state: _state,
+      );
+
+      if (mounted) {
+        SnackBarHelper.showSuccess(context, l10n.profileSaved);
+        
+        // Wait a moment for Firestore to propagate the change
+        await Future.delayed(const Duration(milliseconds: 300));
+        
+        // Pop back to profile screen (StreamBuilder will auto-update)
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackBarHelper.showError(context, "${l10n.failedToSaveProfile}: $e");
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // SAVE SETTINGS
+  // ------------------------------------------------------------------
+  Future<void> _saveSettings() async {
+    final l10n = AppLocalizations.of(context)!;
+    
+    setState(() => _isSaving = true);
+
+    try {
+      await _firestore.updateCompleteUserProfile(
+        serviceReminders: _serviceReminders,
+        biometricLogin: _biometricLogin,
+      );
+
+      if (mounted) {
+        SnackBarHelper.showSuccess(context, l10n.settingsSaved);
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackBarHelper.showError(context, "${l10n.failedToSaveSettings}: $e");
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+
+  // ------------------------------------------------------------------
   // UI
   // ------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
+
+    // Show loading indicator while profile data is loading
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(l10n.editProfile),
+        ),
+        body: Center(
+          child: CircularProgressIndicator(
+            color: scheme.primary,
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Edit Profile"),
+        title: Text(l10n.editProfile),
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: scheme.primary,
-          tabs: const [
-            Tab(text: "Primary"),
-            Tab(text: "Other Info"),
-            Tab(text: "Settings"),
+          tabs: [
+            Tab(text: l10n.primary),
+            Tab(text: l10n.otherInfo),
+            Tab(text: l10n.settings),
           ],
         ),
       ),
@@ -177,28 +508,78 @@ class _EditProfileScreenState extends State<EditProfileScreen>
   // TABS
   // ------------------------------------------------------------------
   Widget _primaryTab() {
+    final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
+    
+    // Gender options - store as English but display as localized
+    final genderOptions = ["Male", "Female", "Other"];
+    final genderDisplayMap = {
+      "Male": l10n.male,
+      "Female": l10n.female,
+      "Other": l10n.other,
+    };
+    
+    // Get localized language display text - lookup fresh for each language
+    String languageDisplayText = "";
+    if (_languages.isNotEmpty) {
+      final displayNames = <String>[];
+      for (var lang in _languages) {
+        displayNames.add(_getLocalizedLanguageName(lang, context));
+      }
+      languageDisplayText = displayNames.join(", ");
+    }
+    
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          _input("Full Name", _nameC),
-          _input("Email", _emailC),
-          _input("Phone", _phoneC),
-          _dropdown(
-            label: "Gender",
+          _input(l10n.fullName, _nameC),
+          _input(l10n.email, _emailC),
+          _input(l10n.phone, _phoneC),
+          _dropdownWithMapping(
+            label: l10n.gender,
             value: _gender,
-            items: ["Male", "Female", "Other"],
-            onChanged: (v) => setState(() => _gender = v!),
+            items: genderOptions,
+            displayMap: genderDisplayMap,
+            onChanged: (v) => setState(() => _gender = v),
           ),
           _picker(
-            "Languages Known",
-            _languages.join(", "),
+            l10n.languagesKnown,
+            languageDisplayText,
             _openLanguageSelector,
           ),
           _picker(
-            "DOB",
-            _dobC.text.isEmpty ? "Select Date" : _dobC.text,
+            l10n.dob,
+            _dobC.text,
             _pickDOB,
+          ),
+          
+          const SizedBox(height: 24),
+          
+          // SAVE BUTTON
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: scheme.primary,
+                foregroundColor: scheme.onPrimary,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              onPressed: _isSaving ? null : _savePrimaryAndOtherInfo,
+              child: _isSaving
+                  ? SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: scheme.onPrimary,
+                      ),
+                    )
+                  : Text(
+                      l10n.saveProfile,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+            ),
           ),
         ],
       ),
@@ -206,13 +587,50 @@ class _EditProfileScreenState extends State<EditProfileScreen>
   }
 
   Widget _otherInfoTab() {
+    final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
+    
+    // Get localized state display text - lookup fresh each time to ensure correct locale
+    String stateDisplayText = "";
+    if (_state != null) {
+      stateDisplayText = _getLocalizedStateName(_state!, context);
+    }
+    
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          _input("Pincode", _pincodeC),
-          _input("City", _cityC),
-          _picker("State", _state, _openStateSelector),
+          _input(l10n.pincode, _pincodeC),
+          _input(l10n.city, _cityC),
+          _picker(l10n.state, stateDisplayText, _openStateSelector),
+          
+          const SizedBox(height: 24),
+          
+          // SAVE BUTTON
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: scheme.primary,
+                foregroundColor: scheme.onPrimary,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              onPressed: _isSaving ? null : _savePrimaryAndOtherInfo,
+              child: _isSaving
+                  ? SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: scheme.onPrimary,
+                      ),
+                    )
+                  : Text(
+                      l10n.saveProfile,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+            ),
+          ),
         ],
       ),
     );
@@ -220,81 +638,40 @@ class _EditProfileScreenState extends State<EditProfileScreen>
 
   Widget _settingsTab() {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- MY NOTIFICATIONS (account-level) ---
-          _sectionHeader("My Notifications", Icons.notifications_outlined),
+          // --- NOTIFICATIONS ---
+          _sectionHeader(l10n.notifications, Icons.notifications_outlined),
           _settingSwitch(
-            "Email Notifications",
-            "Receive service updates via email",
-            _emailNotifications,
-            (v) => setState(() => _emailNotifications = v),
-          ),
-          _settingSwitch(
-            "SMS Notifications",
-            "Receive service updates via SMS",
-            _smsNotifications,
-            (v) => setState(() => _smsNotifications = v),
-          ),
-          _settingSwitch(
-            "Service Reminders",
-            "Reminders for upcoming / overdue services",
+            l10n.serviceReminders,
+            l10n.serviceRemindersDesc,
             _serviceReminders,
             (v) => setState(() => _serviceReminders = v),
-          ),
-          _settingSwitch(
-            "Promotional Offers",
-            "Exclusive deals and discounts",
-            _promotionalOffers,
-            (v) => setState(() => _promotionalOffers = v),
           ),
 
           const SizedBox(height: 24),
 
-          // --- ACCOUNT SECURITY ---
-          _sectionHeader("Account Security", Icons.security_outlined),
+          // --- SECURITY ---
+          _sectionHeader(l10n.security, Icons.security_outlined),
           _settingSwitch(
-            "Two-Factor Authentication",
-            "Extra security via OTP on login",
-            _twoFactorAuth,
-            (v) => setState(() => _twoFactorAuth = v),
-          ),
-          _settingSwitch(
-            "Biometric Login",
-            "Use fingerprint or face ID",
+            l10n.biometricLogin,
+            l10n.biometricLoginDesc,
             _biometricLogin,
             (v) => setState(() => _biometricLogin = v),
-          ),
-          _settingTile(
-            "Change Password",
-            "Update your account password",
-            Icons.lock_outline,
-            () => SnackBarHelper.showInfo(
-              context,
-              "Opening change password...",
-            ),
           ),
 
           const SizedBox(height: 24),
 
           // --- ACCOUNT ACTIONS ---
-          _sectionHeader("Account", Icons.person_outline),
+          _sectionHeader(l10n.account, Icons.person_outline),
           _settingTile(
-            "Linked Vehicles",
-            "Manage vehicles linked to this account",
-            Icons.directions_car_outlined,
-            () => SnackBarHelper.showInfo(
-              context,
-              "Opening linked vehicles...",
-            ),
-          ),
-          _settingTile(
-            "Delete Account",
-            "Permanently remove your account",
+            l10n.deleteAccount,
+            l10n.deleteAccountDesc,
             Icons.delete_forever_outlined,
             () => _confirmDeleteAccount(),
             color: scheme.error,
@@ -311,14 +688,20 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                 foregroundColor: scheme.onPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
-              onPressed: () => SnackBarHelper.showSuccess(
-                context,
-                "Settings saved ✅",
-              ),
-              child: const Text(
-                "Save Settings",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
+              onPressed: _isSaving ? null : _saveSettings,
+              child: _isSaving
+                  ? SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: scheme.onPrimary,
+                      ),
+                    )
+                  : Text(
+                      l10n.saveSettings,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
             ),
           ),
         ],
@@ -421,24 +804,24 @@ class _EditProfileScreenState extends State<EditProfileScreen>
 
   void _confirmDeleteAccount() {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: scheme.surface,
         title: Text(
-          "Delete Account",
+          l10n.deleteAccountTitle,
           style: TextStyle(color: scheme.onSurface),
         ),
         content: Text(
-          "This will permanently delete your account and all associated data. "
-          "This action cannot be undone.",
+          l10n.deleteAccountMessage,
           style: TextStyle(color: scheme.onSurface.withOpacity(0.8)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -449,10 +832,10 @@ class _EditProfileScreenState extends State<EditProfileScreen>
               Navigator.pop(context);
               SnackBarHelper.showWarning(
                 context,
-                "Account deletion requested",
+                l10n.accountDeletionRequested,
               );
             },
-            child: const Text("Delete"),
+            child: Text(l10n.delete),
           ),
         ],
       ),
@@ -477,14 +860,17 @@ class _EditProfileScreenState extends State<EditProfileScreen>
 
   Widget _dropdown({
     required String label,
-    required String value,
+    required String? value,
     required List<String> items,
     required ValueChanged<String?> onChanged,
   }) {
+    final l10n = AppLocalizations.of(context)!;
+    
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
-      child: DropdownButtonFormField(
+      child: DropdownButtonFormField<String>(
         value: value,
+        hint: Text("${l10n.select} $label"),
         items: items
             .map((e) => DropdownMenuItem(value: e, child: Text(e)))
             .toList(),
@@ -497,7 +883,38 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     );
   }
 
+  Widget _dropdownWithMapping({
+    required String label,
+    required String? value,
+    required List<String> items,
+    required Map<String, String> displayMap,
+    required ValueChanged<String?> onChanged,
+  }) {
+    final l10n = AppLocalizations.of(context)!;
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: DropdownButtonFormField<String>(
+        value: value,
+        hint: Text("${l10n.select} $label"),
+        items: items
+            .map((e) => DropdownMenuItem(
+                  value: e,
+                  child: Text(displayMap[e] ?? e),
+                ))
+            .toList(),
+        onChanged: onChanged,
+        decoration: InputDecoration(
+          labelText: label,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      ),
+    );
+  }
+
   Widget _picker(String label, String value, VoidCallback onTap) {
+    final l10n = AppLocalizations.of(context)!;
+    
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: GestureDetector(
@@ -508,7 +925,14 @@ class _EditProfileScreenState extends State<EditProfileScreen>
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             suffixIcon: const Icon(Icons.arrow_drop_down),
           ),
-          child: Text(value),
+          child: Text(
+            value.isEmpty ? "${l10n.select} $label" : value,
+            style: TextStyle(
+              color: value.isEmpty 
+                ? Theme.of(context).colorScheme.onSurface.withOpacity(0.5)
+                : Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
         ),
       ),
     );
@@ -520,12 +944,14 @@ class _EditProfileScreenState extends State<EditProfileScreen>
 // ==================================================================
 class _LanguageDialog extends StatefulWidget {
   final List<String> initial;
-  final List<String> allLanguages;
+  final List<String> allLanguagesKeys;
+  final List<String> allLanguagesDisplay;
   final ValueChanged<List<String>> onSave;
 
   const _LanguageDialog({
     required this.initial,
-    required this.allLanguages,
+    required this.allLanguagesKeys,
+    required this.allLanguagesDisplay,
     required this.onSave,
   });
 
@@ -545,11 +971,12 @@ class __LanguageDialogState extends State<_LanguageDialog> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     
     return AlertDialog(
       backgroundColor: scheme.surface,
       title: Text(
-        "Languages Known",
+        l10n.languagesKnown,
         style: TextStyle(color: scheme.onSurface),
       ),
       content: SizedBox(
@@ -558,22 +985,24 @@ class __LanguageDialogState extends State<_LanguageDialog> {
         child: Scrollbar(
           thumbVisibility: true,
           child: ListView.builder(
-            itemCount: widget.allLanguages.length,
+            itemCount: widget.allLanguagesKeys.length,
             itemBuilder: (_, i) {
-              final lang = widget.allLanguages[i];
+              final langKey = widget.allLanguagesKeys[i];
+              final langDisplay = widget.allLanguagesDisplay[i];
+              
               return CheckboxListTile(
                 title: Text(
-                  lang,
+                  langDisplay,
                   style: TextStyle(color: scheme.onSurface),
                 ),
-                value: _selected.contains(lang),
+                value: _selected.contains(langKey),
                 activeColor: scheme.primary,
                 onChanged: (checked) {
                   setState(() {
                     if (checked == true) {
-                      _selected.add(lang);
+                      _selected.add(langKey);
                     } else {
-                      _selected.remove(lang);
+                      _selected.remove(langKey);
                     }
                   });
                 },
@@ -585,14 +1014,14 @@ class __LanguageDialogState extends State<_LanguageDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text("Cancel"),
+          child: Text(l10n.cancel),
         ),
         ElevatedButton(
           onPressed: () {
             widget.onSave(_selected);
             Navigator.pop(context);
           },
-          child: const Text("OK"),
+          child: Text(l10n.ok),
         ),
       ],
     );
@@ -603,13 +1032,15 @@ class __LanguageDialogState extends State<_LanguageDialog> {
 // STATE DIALOG
 // ==================================================================
 class _StateDialog extends StatefulWidget {
-  final String initial;
-  final List<String> allStates;
+  final String initialKey;
+  final List<String> allStatesKeys;
+  final List<String> allStatesDisplay;
   final ValueChanged<String> onSave;
 
   const _StateDialog({
-    required this.initial,
-    required this.allStates,
+    required this.initialKey,
+    required this.allStatesKeys,
+    required this.allStatesDisplay,
     required this.onSave,
   });
 
@@ -623,17 +1054,18 @@ class __StateDialogState extends State<_StateDialog> {
   @override
   void initState() {
     super.initState();
-    _selected = widget.initial;
+    _selected = widget.initialKey;
   }
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     
     return AlertDialog(
       backgroundColor: scheme.surface,
       title: Text(
-        "Select State",
+        l10n.selectState,
         style: TextStyle(color: scheme.onSurface),
       ),
       content: SizedBox(
@@ -642,14 +1074,17 @@ class __StateDialogState extends State<_StateDialog> {
         child: Scrollbar(
           thumbVisibility: true,
           child: ListView.builder(
-            itemCount: widget.allStates.length,
+            itemCount: widget.allStatesKeys.length,
             itemBuilder: (_, i) {
+              final stateKey = widget.allStatesKeys[i];
+              final stateDisplay = widget.allStatesDisplay[i];
+              
               return RadioListTile<String>(
                 title: Text(
-                  widget.allStates[i],
+                  stateDisplay,
                   style: TextStyle(color: scheme.onSurface),
                 ),
-                value: widget.allStates[i],
+                value: stateKey,
                 groupValue: _selected,
                 activeColor: scheme.primary,
                 onChanged: (v) {
@@ -663,14 +1098,14 @@ class __StateDialogState extends State<_StateDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text("Cancel"),
+          child: Text(l10n.cancel),
         ),
         ElevatedButton(
           onPressed: () {
             widget.onSave(_selected);
             Navigator.pop(context);
           },
-          child: const Text("OK"),
+          child: Text(l10n.ok),
         ),
       ],
     );

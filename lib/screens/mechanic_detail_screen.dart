@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../utils/snackbar_helper.dart';
 
 class MechanicDetailScreen extends StatelessWidget {
@@ -9,6 +10,7 @@ class MechanicDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final scheme = Theme.of(context).colorScheme;
     
     final name = (mechanic['name'] ?? 'Mechanic').trim();
@@ -29,7 +31,7 @@ class MechanicDetailScreen extends StatelessWidget {
         title: Text(name),
         actions: [
           IconButton(
-            tooltip: 'Call',
+            tooltip: l10n.call,
             icon: const Icon(Icons.call),
             onPressed: phone == 'N/A'
                 ? null
@@ -114,7 +116,7 @@ class MechanicDetailScreen extends StatelessWidget {
 
             // ✅ SERVICES
             Text(
-              'Services',
+              l10n.servicesOffered,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -125,7 +127,7 @@ class MechanicDetailScreen extends StatelessWidget {
             Text(
               services.isNotEmpty
                   ? services
-                  : "General vehicle repair services.",
+                  : l10n.generalVehicleRepairServices,
               style: TextStyle(
                 color: scheme.onSurface.withOpacity(0.7),
               ),
@@ -135,7 +137,7 @@ class MechanicDetailScreen extends StatelessWidget {
 
             // ✅ CONTACT
             Text(
-              'Contact',
+              l10n.contactDetails,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -168,7 +170,7 @@ class MechanicDetailScreen extends StatelessWidget {
                         ? null
                         : () => _showCallConfirmation(context, phone),
                     icon: const Icon(Icons.call),
-                    label: const Text("Call"),
+                    label: Text(l10n.call),
                   )
                 ],
               ),
@@ -186,7 +188,7 @@ class MechanicDetailScreen extends StatelessWidget {
                       foregroundColor: scheme.onPrimary,
                     ),
                     icon: const Icon(Icons.add_circle_outline),
-                    label: const Text('Create Request'),
+                    label: Text(l10n.createRequest),
                     onPressed: () {
                       Navigator.pushNamed(
                         context,
@@ -199,11 +201,11 @@ class MechanicDetailScreen extends StatelessWidget {
                 const SizedBox(width: 12),
                 OutlinedButton.icon(
                   icon: const Icon(Icons.share),
-                  label: const Text('Share'),
+                  label: Text(l10n.share),
                   onPressed: () {
                     SnackBarHelper.showInfo(
                       context,
-                      'Share feature coming soon ✅',
+                      l10n.shareFeatureComingSoon,
                     );
                   },
                 ),
@@ -214,7 +216,7 @@ class MechanicDetailScreen extends StatelessWidget {
 
             // ✅ NOTES
             Text(
-              'Notes',
+              l10n.notes,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -223,9 +225,9 @@ class MechanicDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              "• Please confirm service charges before repair.\n"
-              "• Payment options may include Cash / UPI.\n"
-              "• Always verify mechanic identity before proceeding.",
+              "• ${l10n.confirmServiceCharges}\n"
+              "• ${l10n.paymentOptions}\n"
+              "• ${l10n.verifyMechanicIdentity}",
               style: TextStyle(
                 color: scheme.onSurface.withOpacity(0.7),
                 height: 1.4,
@@ -238,6 +240,7 @@ class MechanicDetailScreen extends StatelessWidget {
   }
 
   void _showCallConfirmation(BuildContext context, String phone) {
+    final l10n = AppLocalizations.of(context)!;
     final scheme = Theme.of(context).colorScheme;
     
     showDialog(
@@ -245,17 +248,17 @@ class MechanicDetailScreen extends StatelessWidget {
       builder: (_) => AlertDialog(
         backgroundColor: scheme.surface,
         title: Text(
-          'Call Mechanic',
+          l10n.callMechanic,
           style: TextStyle(color: scheme.onSurface),
         ),
         content: Text(
-          'Do you want to call $phone ?',
+          l10n.doYouWantToCall(phone),
           style: TextStyle(color: scheme.onSurface.withOpacity(0.8)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -266,10 +269,10 @@ class MechanicDetailScreen extends StatelessWidget {
               Navigator.pop(context);
               SnackBarHelper.showInfo(
                 context,
-                'Calling $phone...',
+                l10n.calling(phone),
               );
             },
-            child: const Text('Call'),
+            child: Text(l10n.call),
           ),
         ],
       ),

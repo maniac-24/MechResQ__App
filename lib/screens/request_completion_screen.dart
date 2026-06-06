@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../utils/snackbar_helper.dart';
 
 class RequestCompletionScreen extends StatefulWidget {
@@ -60,10 +61,11 @@ class _RequestCompletionScreenState extends State<RequestCompletionScreen>
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Service Complete"),
+        title: Text(l10n.serviceCompleteTitle),
         centerTitle: true,
         // no back button — user must submit or dismiss explicitly
         automaticallyImplyLeading: false,
@@ -97,7 +99,7 @@ class _RequestCompletionScreenState extends State<RequestCompletionScreen>
 
             const SizedBox(height: 16),
             Text(
-              "Service Completed!",
+              l10n.serviceCompletedExclaim,
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -106,7 +108,7 @@ class _RequestCompletionScreenState extends State<RequestCompletionScreen>
             ),
             const SizedBox(height: 4),
             Text(
-              "Thank you for using MechResQ",
+              l10n.thankYouForUsingMechresq,
               style: TextStyle(
                 fontSize: 14,
                 color: scheme.onSurface.withOpacity(0.6),
@@ -118,13 +120,13 @@ class _RequestCompletionScreenState extends State<RequestCompletionScreen>
             // ===================== SERVICE SUMMARY =====================
             _card(
               context,
-              title: "Service Summary",
+              title: l10n.serviceSummary,
               icon: Icons.receipt_long_outlined,
               children: [
-                _row(context, "Request ID", widget.requestId),
-                _row(context, "Mechanic", widget.mechanicName),
-                _row(context, "Vehicle", widget.vehicleType),
-                _rowMulti(context, "Issue", widget.issueDescription),
+                _row(context, l10n.requestId, widget.requestId),
+                _row(context, l10n.mechanic, widget.mechanicName),
+                _row(context, l10n.vehicle, widget.vehicleType),
+                _rowMulti(context, l10n.issue, widget.issueDescription),
               ],
             ),
 
@@ -133,29 +135,29 @@ class _RequestCompletionScreenState extends State<RequestCompletionScreen>
             // ===================== PAYMENT =====================
             _card(
               context,
-              title: "Payment",
+              title: l10n.payment,
               icon: Icons.payment_outlined,
               children: [
                 _row(
                   context,
-                  "Service Charge",
+                  l10n.serviceCharge,
                   "₹${widget.totalAmount.toStringAsFixed(0)}",
                 ),
                 _row(
                   context,
-                  "Tax (5%)",
+                  l10n.tax,
                   "₹${(widget.totalAmount * 0.05).toStringAsFixed(0)}",
                 ),
                 Divider(color: scheme.outlineVariant, height: 16),
                 _row(
                   context,
-                  "Total",
+                  l10n.total,
                   "₹${(widget.totalAmount * 1.05).toStringAsFixed(0)}",
                   bold: true,
                   highlight: true,
                 ),
                 const SizedBox(height: 8),
-                _row(context, "Payment Method", "UPI / Cash at site"),
+                _row(context, l10n.paymentMethod, l10n.upiCashAtSite),
               ],
             ),
 
@@ -164,7 +166,7 @@ class _RequestCompletionScreenState extends State<RequestCompletionScreen>
             // ===================== RATE MECHANIC =====================
             _card(
               context,
-              title: "Rate Your Mechanic",
+              title: l10n.rateYourMechanic,
               icon: Icons.star_outline,
               children: [
                 const SizedBox(height: 4),
@@ -191,7 +193,7 @@ class _RequestCompletionScreenState extends State<RequestCompletionScreen>
                 const SizedBox(height: 6),
                 // label under stars
                 Text(
-                  _ratingLabel(),
+                  _ratingLabel(context),
                   style: TextStyle(
                     fontSize: 13,
                     color: scheme.onSurface.withOpacity(0.6),
@@ -206,7 +208,7 @@ class _RequestCompletionScreenState extends State<RequestCompletionScreen>
                   maxLines: 3,
                   style: TextStyle(color: scheme.onSurface),
                   decoration: InputDecoration(
-                    hintText: "Write your feedback (optional)…",
+                    hintText: l10n.writeYourFeedbackOptional,
                     hintStyle: TextStyle(
                       color: scheme.onSurface.withOpacity(0.5),
                     ),
@@ -245,9 +247,9 @@ class _RequestCompletionScreenState extends State<RequestCompletionScreen>
                   ),
                 ),
                 onPressed: _rating > 0 ? _submit : null,
-                child: const Text(
-                  "Submit & Close",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                child: Text(
+                  l10n.submitAndClose,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -261,7 +263,7 @@ class _RequestCompletionScreenState extends State<RequestCompletionScreen>
                 Navigator.popUntil(context, (route) => !route.canPop);
               },
               child: Text(
-                "Skip for now",
+                l10n.skipForNow,
                 style: TextStyle(
                   color: scheme.onSurface.withOpacity(0.6),
                 ),
@@ -277,9 +279,10 @@ class _RequestCompletionScreenState extends State<RequestCompletionScreen>
 
   // -----------------------------------------------------------------------
   void _submit() {
+    final l10n = AppLocalizations.of(context)!;
     SnackBarHelper.showSuccess(
       context,
-      "Thank you for your feedback! 🙏",
+      l10n.thankYouForFeedback,
     );
 
     // navigate back to home / request list
@@ -289,14 +292,17 @@ class _RequestCompletionScreenState extends State<RequestCompletionScreen>
     });
   }
 
-  String _ratingLabel() => switch (_rating) {
-        1 => "Poor",
-        2 => "Fair",
-        3 => "Good",
-        4 => "Very Good",
-        5 => "Excellent!",
-        _ => "Tap a star to rate",
-      };
+  String _ratingLabel(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return switch (_rating) {
+      1 => l10n.ratingPoor,
+      2 => l10n.ratingFair,
+      3 => l10n.ratingGood,
+      4 => l10n.ratingVeryGood,
+      5 => l10n.ratingExcellent,
+      _ => l10n.tapStarToRate,
+    };
+  }
 
   // -----------------------------------------------------------------------
   // REUSABLE WIDGETS

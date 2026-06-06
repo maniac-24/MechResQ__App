@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../l10n/app_localizations.dart';
 import '../utils/snackbar_helper.dart';
 
 class HelpScreen extends StatelessWidget {
@@ -8,7 +9,7 @@ class HelpScreen extends StatelessWidget {
 
   // Launch phone dialer
   Future<void> _callSupport() async {
-    final Uri phoneUri = Uri(scheme: 'tel', path: '+917411332462');
+    final Uri phoneUri = Uri(scheme: 'tel', path: '+91 98765 00000');
     if (await canLaunchUrl(phoneUri)) {
       await launchUrl(phoneUri);
     }
@@ -30,31 +31,36 @@ class HelpScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final scheme = Theme.of(context).colorScheme;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ================= HEADER =================
-          Card(
-            color: scheme.surfaceContainerHighest,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline, color: scheme.primary, size: 40),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(l10n.helpSupportTitle),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ================= HEADER =================
+            Card(
+              color: scheme.surfaceContainerHighest,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: scheme.primary, size: 40),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Need Help?",
+                          l10n.needHelp,
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -63,7 +69,7 @@ class HelpScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          "We're here 24/7 to assist you during vehicle breakdowns",
+                          l10n.helpDescription,
                           style: TextStyle(
                             color: scheme.onSurface.withOpacity(0.7),
                             fontSize: 13,
@@ -81,7 +87,7 @@ class HelpScreen extends StatelessWidget {
 
           // ================= QUICK ACTIONS =================
           Text(
-            "Quick Actions",
+            l10n.quickActions,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -95,7 +101,7 @@ class HelpScreen extends StatelessWidget {
               _actionButton(
                 context: context,
                 icon: Icons.phone,
-                label: "Call Support",
+                label: l10n.callSupport,
                 background: scheme.primaryContainer,
                 foreground: scheme.onPrimaryContainer,
                 onTap: () => _callSupport(),
@@ -104,7 +110,7 @@ class HelpScreen extends StatelessWidget {
               _actionButton(
                 context: context,
                 icon: Icons.email,
-                label: "Email Us",
+                label: l10n.emailUs,
                 background: scheme.secondaryContainer,
                 foreground: scheme.onSecondaryContainer,
                 onTap: () => _emailSupport(),
@@ -112,101 +118,53 @@ class HelpScreen extends StatelessWidget {
             ],
           ),
 
-          const SizedBox(height: 12),
-
-          Row(
-            children: [
-              _actionButton(
-                context: context,
-                icon: Icons.bug_report,
-                label: "Report Issue",
-                background: scheme.tertiaryContainer,
-                foreground: scheme.onTertiaryContainer,
-                onTap: () {
-                  SnackBarHelper.showInfo(
-                    context,
-                    "Opening issue report form...",
-                  );
-                },
-              ),
-              const SizedBox(width: 12),
-              _actionButton(
-                context: context,
-                icon: Icons.video_library,
-                label: "Tutorials",
-                background: scheme.primaryContainer,
-                foreground: scheme.onPrimaryContainer,
-                onTap: () {
-                  SnackBarHelper.showInfo(
-                    context,
-                    "Opening video tutorials...",
-                  );
-                },
-              ),
-            ],
-          ),
-
           const SizedBox(height: 24),
 
           // ================= FAQ =================
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "Frequently Asked Questions",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: scheme.onSurface,
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  SnackBarHelper.showInfo(
-                    context,
-                    "Opening full FAQ page...",
-                  );
-                },
-                child: const Text("View All"),
-              ),
-            ],
+          Text(
+            l10n.frequentlyAskedQuestions,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: scheme.onSurface,
+            ),
           ),
           const SizedBox(height: 8),
 
           _faqTile(
             context,
-            "How do I request a mechanic?",
-            "1. Go to Home screen\n2. Browse nearby mechanics or search by filters\n3. Select a mechanic\n4. Tap 'Request Service'\n5. Fill in your vehicle details and issue\n6. Confirm your location\n7. Submit the request",
+            l10n.faqQuestion1,
+            l10n.faqAnswer1,
             Icons.build,
           ),
           _faqTile(
             context,
-            "How is distance calculated?",
-            "Distance is calculated using GPS coordinates between your current location and the mechanic's workshop. Make sure location services are enabled for accurate results.",
+            l10n.faqQuestion2,
+            l10n.faqAnswer2,
             Icons.location_on,
           ),
           _faqTile(
             context,
-            "Can I add multiple vehicles?",
-            "Yes! Open the menu by tapping your profile icon, select 'My Vehicles', and add unlimited vehicles. You can switch between them when creating service requests.",
+            l10n.faqQuestion3,
+            l10n.faqAnswer3,
             Icons.directions_car,
           ),
           _faqTile(
             context,
-            "What should I do in an emergency?",
-            "1. Tap the SOS button (red button in menu)\n2. Your location will be shared automatically\n3. Emergency contacts will be notified\n4. Nearest mechanics will be alerted\n5. Stay calm and safe in your vehicle",
+            l10n.faqQuestion4,
+            l10n.faqAnswer4,
             Icons.emergency,
           ),
           _faqTile(
             context,
-            "How do payments work?",
-            "All payments are processed securely through the app. You can pay via UPI, cards, or wallets after the service is completed. Cash payments are also accepted at the mechanic's discretion.",
+            l10n.faqQuestion5,
+            l10n.faqAnswer5,
             Icons.payment,
           ),
           _faqTile(
             context,
-            "Can I cancel a request?",
-            "Yes, you can cancel before the mechanic accepts it. Go to My Requests → Select request → Tap 'Cancel'. Cancellation charges may apply if mechanic has already started traveling.",
+            l10n.faqQuestion6,
+            l10n.faqAnswer6,
             Icons.cancel,
           ),
 
@@ -214,7 +172,7 @@ class HelpScreen extends StatelessWidget {
 
           // ================= SAFETY TIPS =================
           Text(
-            "Emergency & Safety",
+            l10n.emergencySafety,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -239,7 +197,7 @@ class HelpScreen extends StatelessWidget {
                       Icon(Icons.warning_amber, color: scheme.onErrorContainer),
                       const SizedBox(width: 8),
                       Text(
-                        "Safety Guidelines",
+                        l10n.safetyGuidelines,
                         style: TextStyle(
                           color: scheme.onErrorContainer,
                           fontWeight: FontWeight.bold,
@@ -250,14 +208,7 @@ class HelpScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    "• If stranded in an unsafe location, stay inside your vehicle with doors locked\n"
-                    "• Turn on hazard lights and use warning triangles if available\n"
-                    "• Use the SOS Call feature for immediate emergency assistance\n"
-                    "• Never share OTPs, passwords, or banking details with anyone\n"
-                    "• Verify mechanic ID and rating before accepting service\n"
-                    "• All payments should be done through the app only\n"
-                    "• Take photos of damage before and after repair\n"
-                    "• Keep emergency numbers saved in your phone",
+                    l10n.safetyTips,
                     style: TextStyle(
                       color: scheme.onErrorContainer.withOpacity(0.9),
                       height: 1.6,
@@ -272,7 +223,7 @@ class HelpScreen extends StatelessWidget {
 
           // ================= CONTACT INFO =================
           Text(
-            "Contact Information",
+            l10n.contactInformation,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -291,7 +242,7 @@ class HelpScreen extends StatelessWidget {
                 _contactTile(
                   context,
                   Icons.email,
-                  "Email Support",
+                  l10n.emailSupport,
                   "support@mechresq.com",
                   () => _emailSupport(),
                 ),
@@ -299,24 +250,24 @@ class HelpScreen extends StatelessWidget {
                 _contactTile(
                   context,
                   Icons.phone,
-                  "Phone Support",
-                  "+91 74113 32462",
+                  l10n.phoneSupport,
+                  "+91 98765 00000",
                   () => _callSupport(),
                 ),
                 Divider(height: 1, color: scheme.outlineVariant),
                 _contactTile(
                   context,
                   Icons.access_time,
-                  "Support Hours",
-                  "24/7 Emergency Support",
+                  l10n.supportHours,
+                  l10n.support24x7,
                   null,
                 ),
                 Divider(height: 1, color: scheme.outlineVariant),
                 _contactTile(
                   context,
                   Icons.location_on,
-                  "Location",
-                  "India (All Major Cities)",
+                  l10n.location,
+                  l10n.locationIndia,
                   null,
                 ),
               ],
@@ -340,13 +291,13 @@ class HelpScreen extends StatelessWidget {
               onPressed: () {
                 SnackBarHelper.showInfo(
                   context,
-                  "Opening support ticket form...",
+                  l10n.openingSupportTicket,
                 );
               },
               icon: const Icon(Icons.support_agent),
-              label: const Text(
-                "Submit a Support Ticket",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              label: Text(
+                l10n.submitSupportTicket,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -358,7 +309,7 @@ class HelpScreen extends StatelessWidget {
             child: Column(
               children: [
                 Text(
-                  "MechResQ • Version 1.0.0",
+                  l10n.mechresqVersion,
                   style: TextStyle(
                     color: scheme.onSurface.withOpacity(0.5),
                     fontSize: 12,
@@ -366,7 +317,7 @@ class HelpScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  "© 2026 MechResQ. All rights reserved.",
+                  l10n.copyrightMechresq,
                   style: TextStyle(
                     color: scheme.onSurface.withOpacity(0.4),
                     fontSize: 11,
@@ -378,6 +329,7 @@ class HelpScreen extends StatelessWidget {
 
           const SizedBox(height: 20),
         ],
+      ),
       ),
     );
   }

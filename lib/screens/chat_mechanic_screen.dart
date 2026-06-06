@@ -1,5 +1,6 @@
 // lib/screens/chat_mechanic_screen.dart
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 
 class ChatMechanicScreen extends StatefulWidget {
   final String mechanicName;
@@ -21,14 +22,17 @@ class _ChatMechanicScreenState extends State<ChatMechanicScreen> {
     _Msg(text: "Okay, I'll be waiting.", fromMechanic: false, time: DateTime(2026, 2, 3, 14, 25)),
   ];
 
-  // Quick-reply suggestions
-  static const _quickReplies = [
-    "Where are you?",
-    "I'm at the gate",
-    "Please hurry",
-    "Thank you",
-    "Can you call me?",
-  ];
+  // Quick-reply suggestions - will be localized in build
+  List<String> _getQuickReplies(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return [
+      l10n.quickReplyWhereAreYou,
+      l10n.quickReplyAtGate,
+      l10n.quickReplyHurry,
+      l10n.quickReplyThankYou,
+      l10n.quickReplyCallMe,
+    ];
+  }
 
   @override
   void initState() {
@@ -86,6 +90,7 @@ class _ChatMechanicScreenState extends State<ChatMechanicScreen> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       // ── AppBar with mechanic info ──────────────────────────────────────
@@ -133,7 +138,7 @@ class _ChatMechanicScreenState extends State<ChatMechanicScreen> {
                   ),
                 ),
                 Text(
-                  "Online",
+                  l10n.online,
                   style: TextStyle(
                     fontSize: 11,
                     color: scheme.secondary,
@@ -165,7 +170,7 @@ class _ChatMechanicScreenState extends State<ChatMechanicScreen> {
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
-                children: _quickReplies.map((qr) => Padding(
+                children: _getQuickReplies(context).map((qr) => Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: ActionChip(
                     backgroundColor: scheme.surfaceContainerHighest,
@@ -196,7 +201,7 @@ class _ChatMechanicScreenState extends State<ChatMechanicScreen> {
                     style: TextStyle(color: scheme.onSurface),
                     onSubmitted: _send,
                     decoration: InputDecoration(
-                      hintText: "Type a message…",
+                      hintText: l10n.typeAMessage,
                       hintStyle: TextStyle(
                         color: scheme.onSurface.withOpacity(0.6),
                       ),

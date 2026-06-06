@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../utils/snackbar_helper.dart';
 import '../widgets/request_status_chip.dart';
+import '../l10n/app_localizations.dart';
 
 /// Attachment status enum (aligned with RequestStatus pattern)
 enum AttachmentStatus {
@@ -16,14 +17,15 @@ enum AttachmentStatus {
 }
 
 extension AttachmentStatusExtension on AttachmentStatus {
-  String get label {
+  String label(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     switch (this) {
       case AttachmentStatus.pending:
-        return 'PENDING';
+        return l10n.statusPending;
       case AttachmentStatus.approved:
-        return 'APPROVED';
+        return l10n.statusApproved;
       case AttachmentStatus.rejected:
-        return 'REJECTED';
+        return l10n.statusRejected;
     }
   }
 
@@ -70,10 +72,11 @@ class RequestDetailScreen extends StatelessWidget {
     List attachments,
   ) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     
     if (attachments.isEmpty) {
       return Text(
-        'No attachments uploaded',
+        l10n.noAttachments,
         style: TextStyle(
           color: scheme.onSurface.withOpacity(0.7),
         ),
@@ -102,13 +105,14 @@ class RequestDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     final req = _resolve(context);
     final attachments =
         req['attachments'] is List ? List.from(req['attachments']) : [];
     final requestId = req['requestId'];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Request Details')),
+      appBar: AppBar(title: Text(l10n.requestDetails)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Card(
@@ -121,7 +125,7 @@ class RequestDetailScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Attachments',
+                  l10n.attachments,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -193,17 +197,19 @@ class _AttachmentTileState extends State<_AttachmentTile> {
 
       if (!mounted) return;
 
+      final l10n = AppLocalizations.of(context)!;
       SnackBarHelper.showSuccess(
         context,
         status == 'approved'
-            ? 'Attachment approved ✓'
-            : 'Attachment rejected',
+            ? l10n.attachmentApproved
+            : l10n.attachmentRejected,
       );
     } catch (e) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       SnackBarHelper.showError(
         context,
-        'Failed to update attachment: ${e.toString()}',
+        l10n.failedToUpdateAttachment(e.toString()),
       );
     } finally {
       if (mounted) {
@@ -213,11 +219,12 @@ class _AttachmentTileState extends State<_AttachmentTile> {
   }
 
   Future<void> _download() async {
+    final l10n = AppLocalizations.of(context)!;
     final url = widget.attachment['url'];
     final uri = Uri.tryParse(url);
 
     if (uri == null) {
-      SnackBarHelper.showError(context, 'Invalid URL');
+      SnackBarHelper.showError(context, l10n.invalidUrl);
       return;
     }
 
@@ -225,7 +232,7 @@ class _AttachmentTileState extends State<_AttachmentTile> {
       final canLaunch = await canLaunchUrl(uri);
       if (!canLaunch) {
         if (!mounted) return;
-        SnackBarHelper.showError(context, 'Cannot open this file');
+        SnackBarHelper.showError(context, l10n.cannotOpenFile);
         return;
       }
 
@@ -234,7 +241,7 @@ class _AttachmentTileState extends State<_AttachmentTile> {
       if (!mounted) return;
       SnackBarHelper.showError(
         context,
-        'Failed to download: ${e.toString()}',
+        l10n.failedToDownload(e.toString()),
       );
     }
   }
@@ -242,6 +249,7 @@ class _AttachmentTileState extends State<_AttachmentTile> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     final type = widget.attachment['type'];
     final statusString = widget.attachment['status'] ?? 'pending';
     final status = parseAttachmentStatus(statusString);
@@ -305,7 +313,7 @@ class _AttachmentTileState extends State<_AttachmentTile> {
                               ? null
                               : () => _review('approved'),
                           child: Text(
-                            'Approve',
+                            l10n.approve,
                             style: TextStyle(color: scheme.secondary),
                           ),
                         ),
@@ -316,7 +324,7 @@ class _AttachmentTileState extends State<_AttachmentTile> {
                               ? null
                               : () => _review('rejected'),
                           child: Text(
-                            'Reject',
+                            l10n.reject,
                             style: TextStyle(color: scheme.error),
                           ),
                         ),
@@ -363,7 +371,7 @@ class _AttachmentTileState extends State<_AttachmentTile> {
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
-              _isExpired ? 'EXPIRED' : status.label,
+              _isExpired ? AppLocalizations.of(context)!.statusExpired : status.label(context),
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.bold,

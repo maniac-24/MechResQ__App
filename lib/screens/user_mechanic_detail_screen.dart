@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../l10n/app_localizations.dart';
 
 /// ============================================================================
 /// USER MECHANIC DETAIL SCREEN — PRODUCTION REAL-TIME
@@ -31,6 +32,7 @@ class UserMechanicDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -71,7 +73,7 @@ class UserMechanicDetailScreen extends StatelessWidget {
                   Icon(Icons.error_outline, color: scheme.error, size: 48),
                   const SizedBox(height: 16),
                   Text(
-                    'Mechanic not found',
+                    l10n.mechanicNotFound,
                     style: TextStyle(color: scheme.onSurface.withOpacity(0.7)),
                   ),
                   const SizedBox(height: 16),
@@ -81,7 +83,7 @@ class UserMechanicDetailScreen extends StatelessWidget {
                       foregroundColor: scheme.onPrimary,
                     ),
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Go Back'),
+                    child: Text(l10n.goBack),
                   ),
                 ],
               ),
@@ -222,7 +224,7 @@ class UserMechanicDetailScreen extends StatelessWidget {
                           Text(
                             rating > 0
                                 ? rating.toStringAsFixed(1)
-                                : 'No ratings',
+                                : l10n.noRatings,
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -231,7 +233,7 @@ class UserMechanicDetailScreen extends StatelessWidget {
                           ),
                           if (rating > 0)
                             Text(
-                              " / 5  ($totalReviews reviews)",
+                              " / 5  (${l10n.basedOnReviews(totalReviews)})",
                               style: TextStyle(
                                 fontSize: 13,
                                 color: scheme.onSurface.withOpacity(0.6),
@@ -252,7 +254,7 @@ class UserMechanicDetailScreen extends StatelessWidget {
                         child: _StatTile(
                           scheme: scheme,
                           value: experienceYears > 0 ? "$experienceYears+" : "New",
-                          label: "Years",
+                          label: l10n.years,
                           icon: Icons.work_outline,
                         ),
                       ),
@@ -260,7 +262,7 @@ class UserMechanicDetailScreen extends StatelessWidget {
                         child: _StatTile(
                           scheme: scheme,
                           value: "$totalReviews",
-                          label: "Reviews",
+                          label: l10n.reviews,
                           icon: Icons.message_outlined,
                         ),
                       ),
@@ -268,7 +270,7 @@ class UserMechanicDetailScreen extends StatelessWidget {
                         child: _StatTile(
                           scheme: scheme,
                           value: "${vehicleTypes.length}",
-                          label: "Vehicle Types",
+                          label: l10n.vehicleTypes,
                           icon: Icons.directions_car_outlined,
                         ),
                       ),
@@ -301,8 +303,8 @@ class UserMechanicDetailScreen extends StatelessWidget {
                           const SizedBox(width: 8),
                           Text(
                             lastUpdated != null
-                                ? 'Last seen $minutesSinceUpdate min ago'
-                                : 'Currently Offline',
+                                ? l10n.lastSeenMinutesAgo(minutesSinceUpdate)
+                                : l10n.currentlyOffline,
                             style: TextStyle(
                               color: scheme.onErrorContainer,
                               fontWeight: FontWeight.w600,
@@ -316,7 +318,7 @@ class UserMechanicDetailScreen extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 // SERVICES OFFERED
-                _SectionTitle(scheme: scheme, title: "Services Offered"),
+                _SectionTitle(scheme: scheme, title: l10n.servicesOffered),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Card(
@@ -341,7 +343,7 @@ class UserMechanicDetailScreen extends StatelessWidget {
                 // VEHICLE TYPES
                 if (vehicleTypes.isNotEmpty) ...[
                   _SectionTitle(
-                      scheme: scheme, title: "Supported Vehicle Types"),
+                      scheme: scheme, title: l10n.supportedVehicleTypes),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Wrap(
@@ -367,7 +369,7 @@ class UserMechanicDetailScreen extends StatelessWidget {
 
                 // RATING BREAKDOWN
                 if (rating > 0 && totalReviews > 0) ...[
-                  _SectionTitle(scheme: scheme, title: "Rating Overview"),
+                  _SectionTitle(scheme: scheme, title: l10n.ratingOverview),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Card(
@@ -402,7 +404,7 @@ class UserMechanicDetailScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              "Based on $totalReviews reviews",
+                              l10n.basedOnReviews(totalReviews),
                               style: TextStyle(
                                 fontSize: 12,
                                 color: scheme.onSurface.withOpacity(0.6),
@@ -417,7 +419,7 @@ class UserMechanicDetailScreen extends StatelessWidget {
                 ],
 
                 // CONTACT OPTIONS
-                _SectionTitle(scheme: scheme, title: "Contact"),
+                _SectionTitle(scheme: scheme, title: l10n.contact),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Card(

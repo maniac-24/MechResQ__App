@@ -1,44 +1,26 @@
 {
   "project_info": {
-    "project_number": "439615398094",
-    "project_id": "mechresqapp",
-    "storage_bucket": "mechresqapp.firebasestorage.app"
+    "project_number": "1818606114",
+    "project_id": "mechresq-5f48e",
+    "storage_bucket": "mechresq-5f48e.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:439615398094:android:cbe343cf87851cb7ccb09f",
+        "mobilesdk_app_id": "1:1818606114:android:753a5b67a09a684602287b",
         "android_client_info": {
-          "package_name": "com.example.appmechresq"
+          "package_name": "com.aistudio.mechresq.mchras"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "439615398094-im9t3dn0kstukok7nouou92r0blp2ji9.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.example.appmechresq",
-            "certificate_hash": "fb9bddc3149932fd5992de50369d61f07f0278cc"
-          }
-        },
-        {
-          "client_id": "439615398094-hmnoblml41eboh8m3eo39v5b19mfr8bu.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyD0U_VYiALpHhWMUKEDSExDlNPFXAlWcqA"
+          "current_key": "AIzaSyA7xp1j4PKpxBj294GwdxCte_A3vPUdJ-A"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "439615398094-hmnoblml41eboh8m3eo39v5b19mfr8bu.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }

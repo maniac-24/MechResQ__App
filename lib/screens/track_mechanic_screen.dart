@@ -13,6 +13,7 @@ import '../widgets/request_status_chip.dart'; // RequestStatus enum
 import 'live_tracking_map_screen.dart';
 import 'user_mechanic_detail_screen.dart';
 import 'chat_mechanic_screen.dart';
+import '../l10n/app_localizations.dart';
 
 /// ============================================================================
 /// TRACK MECHANIC SCREEN — PRODUCTION REAL-TIME TRACKING
@@ -198,12 +199,13 @@ class _TrackMechanicScreenState extends State<TrackMechanicScreen> {
   // UI helpers
   // ──────────────────────────────────────────────────────────────────────────
   Future<void> _callMechanic(String phone) async {
+    final l10n = AppLocalizations.of(context)!;
     final uri = Uri.parse('tel:$phone');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     } else {
       if (!mounted) return;
-      SnackBarHelper.showError(context, 'Cannot launch phone dialer');
+      SnackBarHelper.showError(context, l10n.cannotLaunchDialer);
     }
   }
 
@@ -237,10 +239,11 @@ class _TrackMechanicScreenState extends State<TrackMechanicScreen> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Track Mechanic"),
+        title: Text(l10n.trackMechanic),
         centerTitle: true,
       ),
       body: StreamBuilder<DocumentSnapshot>(
@@ -257,6 +260,7 @@ class _TrackMechanicScreenState extends State<TrackMechanicScreen> {
           if (requestSnap.hasError ||
               !requestSnap.hasData ||
               !requestSnap.data!.exists) {
+            final l10n = AppLocalizations.of(context)!;
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -264,7 +268,7 @@ class _TrackMechanicScreenState extends State<TrackMechanicScreen> {
                   Icon(Icons.error_outline, color: scheme.error, size: 48),
                   const SizedBox(height: 16),
                   Text(
-                    'Request not found',
+                    l10n.requestNotFound,
                     style: TextStyle(color: scheme.onSurface.withOpacity(0.7)),
                   ),
                 ],
@@ -284,6 +288,7 @@ class _TrackMechanicScreenState extends State<TrackMechanicScreen> {
 
           // No mechanic assigned yet
           if (mechanicId == null || mechanicId.isEmpty) {
+            final l10n = AppLocalizations.of(context)!;
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -291,7 +296,7 @@ class _TrackMechanicScreenState extends State<TrackMechanicScreen> {
                   Icon(Icons.hourglass_empty, color: scheme.tertiary, size: 48),
                   const SizedBox(height: 16),
                   Text(
-                    'Waiting for mechanic assignment…',
+                    l10n.waitingForMechanic,
                     style: TextStyle(color: scheme.onSurface.withOpacity(0.7)),
                   ),
                 ],
@@ -301,9 +306,10 @@ class _TrackMechanicScreenState extends State<TrackMechanicScreen> {
 
           // Invalid user location
           if (userLat == null || userLng == null) {
+            final l10n = AppLocalizations.of(context)!;
             return Center(
               child: Text(
-                'User location not available',
+                l10n.userLocationNotAvailable,
                 style: TextStyle(color: scheme.onSurface.withOpacity(0.7)),
               ),
             );
@@ -324,9 +330,10 @@ class _TrackMechanicScreenState extends State<TrackMechanicScreen> {
               if (mechanicSnap.hasError ||
                   !mechanicSnap.hasData ||
                   !mechanicSnap.data!.exists) {
+                final l10n = AppLocalizations.of(context)!;
                 return Center(
                   child: Text(
-                    'Mechanic data not found',
+                    l10n.mechanicDataNotFound,
                     style: TextStyle(color: scheme.onSurface.withOpacity(0.7)),
                   ),
                 );
@@ -343,15 +350,17 @@ class _TrackMechanicScreenState extends State<TrackMechanicScreen> {
               final totalReviews = mechData['totalReviews'] as int? ?? 0;
 
               if (liveLat == null || liveLng == null) {
+                final l10n = AppLocalizations.of(context)!;
                 return Center(
                   child: Text(
-                    'Mechanic location not available',
+                    l10n.userLocationNotAvailable,
                     style: TextStyle(color: scheme.onSurface.withOpacity(0.7)),
                   ),
                 );
               }
 
               final mechanicPos = LatLng(liveLat, liveLng);
+              final l10n = AppLocalizations.of(context)!;
 
               // Offline detection (2 min threshold)
               final now = DateTime.now();
@@ -392,7 +401,7 @@ class _TrackMechanicScreenState extends State<TrackMechanicScreen> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'Mechanic Offline',
+                              l10n.mechanicOffline,
                               style: TextStyle(
                                 color: scheme.onErrorContainer,
                                 fontWeight: FontWeight.bold,
@@ -421,7 +430,7 @@ class _TrackMechanicScreenState extends State<TrackMechanicScreen> {
                             position: userPos,
                             icon: BitmapDescriptor.defaultMarkerWithHue(
                                 BitmapDescriptor.hueBlue),
-                            infoWindow: const InfoWindow(title: 'You'),
+                            infoWindow: InfoWindow(title: l10n.you),
                           ),
                           // Mechanic marker (animated position)
                           Marker(
@@ -499,9 +508,9 @@ class _TrackMechanicScreenState extends State<TrackMechanicScreen> {
                               ),
                             ),
                             icon: const Icon(Icons.fullscreen, size: 17),
-                            label: const Text(
-                              'Full Map',
-                              style: TextStyle(
+                            label: Text(
+                              l10n.fullMap,
+                              style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -567,7 +576,7 @@ class _TrackMechanicScreenState extends State<TrackMechanicScreen> {
                         onSOS: () {
                           SnackBarHelper.showWarning(
                             context,
-                            '🚨 SOS call initiated!',
+                            l10n.sosCallInitiated,
                           );
                         },
                       ),
@@ -594,23 +603,24 @@ class _TrackMechanicScreenState extends State<TrackMechanicScreen> {
   // ──────────────────────────────────────────────────────────────────────────
   void _showCancelDialog() {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: scheme.surface,
         title: Text(
-          'Cancel Request',
+          l10n.cancelRequest,
           style: TextStyle(color: scheme.onSurface),
         ),
         content: Text(
-          'Are you sure? You can only cancel before the mechanic starts travelling.',
+          l10n.cancelRequestMessage,
           style: TextStyle(color: scheme.onSurface.withOpacity(0.8)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('No'),
+            child: Text(l10n.no),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -625,13 +635,14 @@ class _TrackMechanicScreenState extends State<TrackMechanicScreen> {
                   'updatedAt': FieldValue.serverTimestamp(),
                 });
                 if (!mounted) return;
-                SnackBarHelper.showSuccess(context, 'Request cancelled');
+                SnackBarHelper.showSuccess(context, l10n.requestCancelled);
               } catch (e) {
                 if (!mounted) return;
-                SnackBarHelper.showError(context, 'Failed to cancel: $e');
+                final l10n = AppLocalizations.of(context)!;
+                SnackBarHelper.showError(context, '${l10n.cancelRequest}: $e');
               }
             },
-            child: const Text('Yes, Cancel'),
+            child: Text(l10n.yesCancel),
           ),
         ],
       ),
@@ -657,12 +668,6 @@ class _StatusTimeline extends StatelessWidget {
     RequestStatus.completed,
   ];
   
-  static const _labels = {
-    RequestStatus.accepted: 'Accepted',
-    RequestStatus.onTheWay: 'On the Way',
-    RequestStatus.completed: 'Completed',
-  };
-  
   static const _icons = {
     RequestStatus.accepted: Icons.check_circle_outline,
     RequestStatus.onTheWay: Icons.directions_bike,
@@ -677,6 +682,13 @@ class _StatusTimeline extends StatelessWidget {
         : status;
     
     final cur = _steps.indexOf(displayStatus).clamp(0, _steps.length - 1);
+    final l10n = AppLocalizations.of(context)!;
+    
+    final labels = {
+      RequestStatus.accepted: l10n.timelineAccepted,
+      RequestStatus.onTheWay: l10n.timelineOnTheWay,
+      RequestStatus.completed: l10n.timelineCompleted,
+    };
 
     return Container(
       color: scheme.surfaceContainerHighest,
@@ -713,7 +725,7 @@ class _StatusTimeline extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      _labels[_steps[i]]!,
+                      labels[_steps[i]]!,
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: active ? FontWeight.bold : FontWeight.normal,

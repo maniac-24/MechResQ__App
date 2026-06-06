@@ -1,6 +1,7 @@
 // lib/screens/live_tracking_map_screen.dart
 
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 
 /// Type-safe tracking status enum
 enum TrackingStatus {
@@ -66,6 +67,7 @@ class _LiveTrackingMapScreenState extends State<LiveTrackingMapScreen> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       // transparent appBar so map bleeds underneath
@@ -91,7 +93,7 @@ class _LiveTrackingMapScreenState extends State<LiveTrackingMapScreen> {
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
-            "Live Tracking",
+            l10n.liveTracking,
             style: TextStyle(
               color: scheme.onSurface,
               fontSize: 15,
@@ -124,7 +126,7 @@ class _LiveTrackingMapScreenState extends State<LiveTrackingMapScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      "Full-Screen Live Map",
+                      l10n.fullScreenLiveMap,
                       style: TextStyle(
                         color: scheme.onSurface.withOpacity(0.24),
                         fontSize: 15,
@@ -145,7 +147,7 @@ class _LiveTrackingMapScreenState extends State<LiveTrackingMapScreen> {
               icon: Icons.person_pin,
               color: scheme.secondaryContainer,
               foreground: scheme.onSecondaryContainer,
-              label: "You",
+              label: l10n.you,
             ),
           ),
           // Mechanic pin
@@ -297,6 +299,7 @@ class _BottomPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     final arrived = status == TrackingStatus.arrived;
 
     return Container(
@@ -343,7 +346,7 @@ class _BottomPanel extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    "Mechanic has arrived!",
+                    l10n.mechanicHasArrived,
                     style: TextStyle(
                       color: scheme.onTertiaryContainer,
                       fontSize: 15,
@@ -382,7 +385,7 @@ class _BottomPanel extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    arrived ? "At your location" : "On the way to you",
+                    arrived ? l10n.atYourLocation : l10n.onTheWayToYou,
                     style: TextStyle(
                       fontSize: 12,
                       color: scheme.onSurface.withOpacity(0.6),
@@ -403,8 +406,8 @@ class _BottomPanel extends StatelessWidget {
                   child: _statChip(
                     context,
                     Icons.route,
-                    "${distanceKm.toStringAsFixed(1)} km",
-                    "Distance",
+                    "${distanceKm.toStringAsFixed(1)} ${l10n.km}",
+                    l10n.distance,
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -412,8 +415,8 @@ class _BottomPanel extends StatelessWidget {
                   child: _statChip(
                     context,
                     Icons.access_alarm,
-                    "$etaMinutes min",
-                    "ETA",
+                    "$etaMinutes ${l10n.minutes}",
+                    l10n.eta,
                   ),
                 ),
               ],

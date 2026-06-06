@@ -2,8 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../l10n/app_localizations.dart';
 
 import '../theme_controller.dart';
+import '../locale_provider.dart';
 import '../utils/snackbar_helper.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -17,30 +19,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ---------------------------------------------------------------
   // STATE
   // ---------------------------------------------------------------
-  String _appLanguage = "English"; // UI language
-  bool _notificationsEnabled = true; // global toggle
-
-  // Simulated cache size (replace with real calculation)
-  String _cacheSize = "12.4 MB";
-
-  // Simulated data usage (replace with real tracking)
-  final Map<String, String> _dataUsage = {
-    "Profile Photos": "3.2 MB",
-    "Vehicle Images": "18.6 MB",
-    "Cached Maps": "8.1 MB",
-    "Service History": "1.4 MB",
-  };
-
   static const String _appVersion = "1.0.0";
   static const String _buildNumber = "42";
 
   final List<String> _themeOptions = ["Light", "Dark", "System"];
-  final List<String> _languageOptions = [
-    "English",
-    "Hindi",
-    "Kannada",
-    "Tamil",
-    "Telugu"
+  
+  // Language options with codes (for POC: English and Kannada only)
+  final List<Map<String, String>> _languageOptions = [
+    {"code": "en", "name": "English"},
+    {"code": "kn", "name": "ಕನ್ನಡ"},
   ];
 
   // ---------------------------------------------------------------
@@ -50,16 +37,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final themeController = context.watch<ThemeController>();
+    final localeProvider = context.watch<LocaleProvider>();
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Settings"),
+        title: Text(l10n.settings),
       ),
       body: ListView(
         padding: const EdgeInsets.all(12),
         children: [
           // ===== APPEARANCE =====
-          _sectionHeader(context, "Appearance", Icons.palette_outlined),
+          _sectionHeader(context, l10n.appearance, Icons.palette_outlined),
 
           // Theme selector
           Card(
@@ -74,9 +63,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         : Icons.settings_brightness,
                 color: scheme.onSurface,
               ),
-              title: const Text("Theme"),
+              title: Text(l10n.theme),
               subtitle: Text(
-                themeController.themeString,
+                _getLocalizedThemeName(themeController.themeString, l10n),
                 style: TextStyle(
                   fontSize: 12,
                   color: scheme.onSurface.withOpacity(0.7),
@@ -87,7 +76,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 size: 16,
                 color: scheme.onSurface.withOpacity(0.5),
               ),
-              onTap: () => _showThemePicker(),
+              onTap: () => _showThemePicker(l10n),
             ),
           ),
 
@@ -97,9 +86,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             margin: const EdgeInsets.only(bottom: 8),
             child: ListTile(
               leading: Icon(Icons.translate, color: scheme.onSurface),
-              title: const Text("App Language"),
+              title: Text(l10n.appLanguage),
               subtitle: Text(
-                _appLanguage,
+                localeProvider.getLocaleName(localeProvider.locale.languageCode),
                 style: TextStyle(
                   fontSize: 12,
                   color: scheme.onSurface.withOpacity(0.7),
@@ -110,202 +99,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 size: 16,
                 color: scheme.onSurface.withOpacity(0.5),
               ),
-              onTap: () => _showLanguagePicker(),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // ===== NOTIFICATIONS =====
-          _sectionHeader(context, "Notifications", Icons.notifications_outlined),
-
-          // Global toggle
-          Card(
-            color: scheme.surfaceContainerHighest,
-            margin: const EdgeInsets.only(bottom: 8),
-            child: SwitchListTile(
-              value: _notificationsEnabled,
-              onChanged: (v) => setState(() => _notificationsEnabled = v),
-              title: const Text("Enable Notifications"),
-              subtitle: Text(
-                _notificationsEnabled
-                    ? "You will receive app updates"
-                    : "All notifications are off",
-                style: TextStyle(
-                  fontSize: 12,
-                  color: scheme.onSurface.withOpacity(0.7),
-                ),
-              ),
-              secondary: Icon(
-                _notificationsEnabled
-                    ? Icons.notifications_active
-                    : Icons.notifications_off,
-                color: scheme.onSurface,
-              ),
-              activeColor: scheme.primary,
-            ),
-          ),
-
-          // Shortcut → system notification settings
-          Card(
-            color: scheme.surfaceContainerHighest,
-            margin: const EdgeInsets.only(bottom: 8),
-            child: ListTile(
-              leading: Icon(Icons.settings_outlined, color: scheme.onSurface),
-              title: const Text("System Notification Settings"),
-              subtitle: Text(
-                "Manage on device level",
-                style: TextStyle(
-                  fontSize: 12,
-                  color: scheme.onSurface.withOpacity(0.7),
-                ),
-              ),
-              trailing: Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: scheme.onSurface.withOpacity(0.5),
-              ),
-              onTap: () => SnackBarHelper.showInfo(
-                context,
-                "Opening system notification settings...",
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // ===== STORAGE =====
-          _sectionHeader(context, "Storage", Icons.storage_outlined),
-
-          // Cache size + clear button
-          Card(
-            color: scheme.surfaceContainerHighest,
-            margin: const EdgeInsets.only(bottom: 8),
-            child: Column(
-              children: [
-                ListTile(
-                  leading: Icon(
-                    Icons.cleaning_services_outlined,
-                    color: scheme.onSurface,
-                  ),
-                  title: const Text("Cache"),
-                  subtitle: Text(
-                    "Currently using $_cacheSize",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: scheme.onSurface.withOpacity(0.7),
-                    ),
-                  ),
-                  trailing: TextButton(
-                    onPressed: () => _clearCache(),
-                    child: Text(
-                      "Clear",
-                      style: TextStyle(
-                        color: scheme.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Data usage breakdown
-          Card(
-            color: scheme.surfaceContainerHighest,
-            margin: const EdgeInsets.only(bottom: 8),
-            child: Column(
-              children: [
-                ListTile(
-                  leading: Icon(
-                    Icons.bar_chart_outlined,
-                    color: scheme.onSurface,
-                  ),
-                  title: const Text("Data Usage"),
-                  subtitle: Text(
-                    "Storage breakdown",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: scheme.onSurface.withOpacity(0.7),
-                    ),
-                  ),
-                  trailing: Icon(
-                    Icons.arrow_forward_ios,
-                    size: 16,
-                    color: scheme.onSurface.withOpacity(0.5),
-                  ),
-                  onTap: () => _showDataUsageDialog(),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // ===== LEGAL =====
-          _sectionHeader(context, "Legal", Icons.gavel_outlined),
-
-          Card(
-            color: scheme.surfaceContainerHighest,
-            margin: const EdgeInsets.only(bottom: 8),
-            child: Column(
-              children: [
-                ListTile(
-                  leading: Icon(
-                    Icons.privacy_tip_outlined,
-                    color: scheme.onSurface,
-                  ),
-                  title: const Text("Privacy Policy"),
-                  trailing: Icon(
-                    Icons.arrow_forward_ios,
-                    size: 16,
-                    color: scheme.onSurface.withOpacity(0.5),
-                  ),
-                  onTap: () => _showInfoDialog(
-                    "Privacy Policy",
-                    "Last updated: January 2026\n\n"
-                        "We respect your privacy. Here is how we handle your data:\n\n"
-                        "• Your personal data is stored securely and encrypted at rest.\n"
-                        "• We never sell or share your data with third parties without consent.\n"
-                        "• Location data is used only to find nearby mechanics.\n"
-                        "• You can request a full data export or deletion at any time.\n"
-                        "• Cookies and local storage are used only for app functionality.\n\n"
-                        "For questions, contact support@mechresq.com",
-                  ),
-                ),
-                Divider(height: 1, color: scheme.outlineVariant),
-                ListTile(
-                  leading: Icon(
-                    Icons.description_outlined,
-                    color: scheme.onSurface,
-                  ),
-                  title: const Text("Terms & Conditions"),
-                  trailing: Icon(
-                    Icons.arrow_forward_ios,
-                    size: 16,
-                    color: scheme.onSurface.withOpacity(0.5),
-                  ),
-                  onTap: () => _showInfoDialog(
-                    "Terms & Conditions",
-                    "Last updated: January 2026\n\n"
-                        "By using MechResQ, you agree to the following:\n\n"
-                        "• You must be 18 years or older to use this service.\n"
-                        "• MechResQ is not liable for disputes between users and mechanics.\n"
-                        "• All payments processed through the app are final unless disputed within 24 hours.\n"
-                        "• Misuse of the platform may result in account suspension.\n"
-                        "• MechResQ reserves the right to modify these terms at any time.\n\n"
-                        "For questions, contact support@mechresq.com",
-                  ),
-                ),
-              ],
+              onTap: () => _showLanguagePicker(localeProvider, l10n),
             ),
           ),
 
           const SizedBox(height: 16),
 
           // ===== ABOUT =====
-          _sectionHeader(context, "About", Icons.info_outlined),
+          _sectionHeader(context, l10n.about, Icons.info_outlined),
 
           Card(
             color: scheme.surfaceContainerHighest,
@@ -314,20 +115,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 ListTile(
                   leading: Icon(Icons.info_outline, color: scheme.onSurface),
-                  title: const Text("About MechResQ"),
+                  title: Text(l10n.aboutMechResQ),
                   trailing: Icon(
                     Icons.arrow_forward_ios,
                     size: 16,
                     color: scheme.onSurface.withOpacity(0.5),
                   ),
                   onTap: () => _showInfoDialog(
-                    "About MechResQ",
-                    "MechResQ\n"
-                        "Version $_appVersion (Build $_buildNumber)\n\n"
-                        "A fast and reliable vehicle breakdown assistance app.\n\n"
-                        "Find nearby mechanics, request service, track your requests — "
-                        "all in one place.\n\n"
-                        "© 2026 MechResQ. All rights reserved.",
+                    l10n.aboutMechResQ,
+                    l10n.aboutMechResQDescription(_appVersion, _buildNumber),
+                    l10n,
                   ),
                 ),
                 Divider(height: 1, color: scheme.outlineVariant),
@@ -339,7 +136,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        "Version",
+                        l10n.version,
                         style: TextStyle(
                           color: scheme.onSurface.withOpacity(0.6),
                         ),
@@ -358,40 +155,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
 
-          const SizedBox(height: 16),
-
-          // ===== DANGER ZONE =====
-          _sectionHeader(context, "Danger Zone", Icons.warning_amber_outlined),
-
-          Card(
-            color: scheme.surfaceContainerHighest,
-            margin: const EdgeInsets.only(bottom: 8),
-            child: ListTile(
-              leading: Icon(Icons.refresh_outlined, color: scheme.error),
-              title: Text(
-                "Reset App Preferences",
-                style: TextStyle(color: scheme.error),
-              ),
-              subtitle: Text(
-                "Restore all settings to defaults",
-                style: TextStyle(
-                  fontSize: 12,
-                  color: scheme.onSurface.withOpacity(0.7),
-                ),
-              ),
-              trailing: Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: scheme.onSurface.withOpacity(0.5),
-              ),
-              onTap: () => _confirmResetPreferences(),
-            ),
-          ),
-
           const SizedBox(height: 24),
         ],
       ),
     );
+  }
+
+  // ---------------------------------------------------------------
+  // HELPER: Get localized theme name
+  // ---------------------------------------------------------------
+  String _getLocalizedThemeName(String theme, AppLocalizations l10n) {
+    switch (theme) {
+      case "Light":
+        return l10n.light;
+      case "Dark":
+        return l10n.dark;
+      case "System":
+        return l10n.system;
+      default:
+        return theme;
+    }
   }
 
   // ---------------------------------------------------------------
@@ -422,7 +205,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ---------------------------------------------------------------
   // THEME PICKER (bottom sheet)
   // ---------------------------------------------------------------
-  void _showThemePicker() {
+  void _showThemePicker(AppLocalizations l10n) {
     final scheme = Theme.of(context).colorScheme;
     final themeController = context.read<ThemeController>();
 
@@ -439,7 +222,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                "Choose Theme",
+                l10n.chooseTheme,
                 style: TextStyle(
                   color: scheme.onSurface,
                   fontSize: 17,
@@ -458,7 +241,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 return ListTile(
                   leading: Icon(icon, color: scheme.primary),
                   title: Text(
-                    option,
+                    _getLocalizedThemeName(option, l10n),
                     style: TextStyle(color: scheme.onSurface),
                   ),
                   trailing: isSelected
@@ -471,7 +254,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     if (!mounted) return;
                     SnackBarHelper.showInfo(
                       context,
-                      "Theme set to $option",
+                      l10n.themeSetTo(_getLocalizedThemeName(option, l10n)),
                     );
                   },
                 );
@@ -486,7 +269,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ---------------------------------------------------------------
   // LANGUAGE PICKER (bottom sheet)
   // ---------------------------------------------------------------
-  void _showLanguagePicker() {
+  void _showLanguagePicker(LocaleProvider localeProvider, AppLocalizations l10n) {
     final scheme = Theme.of(context).colorScheme;
 
     showModalBottomSheet(
@@ -502,7 +285,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                "App Language",
+                l10n.appLanguage,
                 style: TextStyle(
                   color: scheme.onSurface,
                   fontSize: 17,
@@ -511,22 +294,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 16),
               ..._languageOptions.map((lang) {
-                final isSelected = lang == _appLanguage;
+                final langCode = lang["code"]!;
+                final langName = lang["name"]!;
+                final isSelected = langCode == localeProvider.locale.languageCode;
+                
                 return ListTile(
                   leading: Icon(Icons.translate, color: scheme.primary),
                   title: Text(
-                    lang,
-                    style: TextStyle(color: scheme.onSurface),
+                    langName,
+                    style: TextStyle(
+                      color: scheme.onSurface,
+                      fontSize: 16,
+                    ),
                   ),
                   trailing: isSelected
                       ? Icon(Icons.check, color: scheme.primary)
                       : null,
-                  onTap: () {
-                    setState(() => _appLanguage = lang);
+                  onTap: () async {
+                    await localeProvider.setLocale(Locale(langCode));
+                    if (!ctx.mounted) return;
                     Navigator.pop(ctx);
+                    if (!mounted) return;
+                    
+                    // Wait a frame for locale to update
+                    await Future.delayed(const Duration(milliseconds: 100));
+                    if (!mounted) return;
+                    
                     SnackBarHelper.showInfo(
                       context,
-                      "Language changed to $lang",
+                      AppLocalizations.of(context)!.languageChangedTo(langName),
                     );
                   },
                 );
@@ -539,173 +335,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   // ---------------------------------------------------------------
-  // CLEAR CACHE
+  // INFO DIALOG (About)
   // ---------------------------------------------------------------
-  void _clearCache() {
-    final scheme = Theme.of(context).colorScheme;
-
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: scheme.surface,
-        title: Text(
-          "Clear Cache",
-          style: TextStyle(color: scheme.onSurface),
-        ),
-        content: Text(
-          "This will remove $_cacheSize of temporary data. The app may load slightly slower on next use.",
-          style: TextStyle(color: scheme.onSurface.withOpacity(0.8)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: scheme.primary,
-              foregroundColor: scheme.onPrimary,
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() => _cacheSize = "0.0 MB");
-              SnackBarHelper.showSuccess(context, "Cache cleared successfully");
-            },
-            child: const Text("Clear"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------
-  // DATA USAGE DIALOG
-  // ---------------------------------------------------------------
-  void _showDataUsageDialog() {
-    final scheme = Theme.of(context).colorScheme;
-    final total = _dataUsage.values.toList();
-
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: scheme.surface,
-        title: Text(
-          "Data Usage",
-          style: TextStyle(color: scheme.onSurface),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ..._dataUsage.entries.map(
-              (entry) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      entry.key,
-                      style: TextStyle(color: scheme.onSurface),
-                    ),
-                    Text(
-                      entry.value,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w500,
-                        color: scheme.onSurface,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Divider(color: scheme.outlineVariant),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Total",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: scheme.onSurface,
-                  ),
-                ),
-                Text(
-                  total.join(" + "),
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: scheme.onSurface,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Close"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------
-  // RESET PREFERENCES
-  // ---------------------------------------------------------------
-  void _confirmResetPreferences() {
-    final scheme = Theme.of(context).colorScheme;
-
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: scheme.surface,
-        title: Text(
-          "Reset Preferences",
-          style: TextStyle(color: scheme.onSurface),
-        ),
-        content: Text(
-          "This will reset theme, language, and notification settings to their defaults. "
-          "Your account and personal data will not be affected.",
-          style: TextStyle(color: scheme.onSurface.withOpacity(0.8)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: scheme.error,
-              foregroundColor: scheme.onError,
-            ),
-            onPressed: () async {
-              Navigator.pop(context);
-
-              // Reset theme via Provider
-              await context.read<ThemeController>().setTheme("System");
-
-              setState(() {
-                _appLanguage = "English";
-                _notificationsEnabled = true;
-              });
-
-              if (!mounted) return;
-              SnackBarHelper.showSuccess(
-                context,
-                "All preferences reset to defaults",
-              );
-            },
-            child: const Text("Reset"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------
-  // INFO DIALOG (Privacy Policy / T&C / About)
-  // ---------------------------------------------------------------
-  void _showInfoDialog(String title, String content) {
+  void _showInfoDialog(String title, String content, AppLocalizations l10n) {
     final scheme = Theme.of(context).colorScheme;
 
     showDialog(
@@ -725,7 +357,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Close"),
+            child: Text(l10n.close),
           ),
         ],
       ),

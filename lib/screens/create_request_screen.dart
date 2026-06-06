@@ -13,6 +13,7 @@ import '../services/request_firestore_service.dart';
 import '../utils/location_permission_utils.dart';
 import '../utils/snackbar_helper.dart';
 import '../widgets/map_location_picker.dart';
+import '../l10n/app_localizations.dart';
 
 class CreateRequestScreen extends StatefulWidget {
   final Map<String, String>? mechanic;
@@ -65,6 +66,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
   // ------------------------------------------------
   Future<String?> _showPermissionBottomSheet() async {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     
     return await showModalBottomSheet<String>(
       context: context,
@@ -82,7 +84,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: Text(
-                  'MechResQ wants to access your storage',
+                  l10n.mechresqWantsAccessStorage,
                   style: TextStyle(
                     color: scheme.onSurface,
                     fontSize: 17,
@@ -95,7 +97,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: Text(
-                  'This is needed to attach photos to your request',
+                  l10n.neededToAttachPhotos,
                   style: TextStyle(
                     color: scheme.onSurface.withOpacity(0.6),
                     fontSize: 14,
@@ -106,12 +108,12 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
               const SizedBox(height: 24),
               Divider(color: scheme.outlineVariant, height: 1),
               _permissionOption(context,
-                  title: 'While using the app', value: 'while_using'),
+                  title: l10n.whileUsingApp, value: 'while_using'),
               Divider(color: scheme.outlineVariant, height: 1),
               _permissionOption(context,
-                  title: 'Only this time', value: 'only_this_time'),
+                  title: l10n.onlyThisTime, value: 'only_this_time'),
               Divider(color: scheme.outlineVariant, height: 1),
-              _permissionOption(context, title: "Don't allow", value: null),
+              _permissionOption(context, title: l10n.dontAllow, value: null),
             ],
           ),
         ),
@@ -145,6 +147,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
   // ------------------------------------------------
   Future<String?> _showFilePickerBottomSheet() async {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     
     return await showModalBottomSheet<String>(
       context: context,
@@ -162,7 +165,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: Text(
-                  'Upload ID Document',
+                  l10n.uploadIdDocument,
                   style: TextStyle(
                     color: scheme.onSurface,
                     fontSize: 17,
@@ -175,21 +178,21 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
               Divider(color: scheme.outlineVariant, height: 1),
               _fileOption(context,
                   icon: Icons.camera_alt,
-                  title: 'Take Photo',
+                  title: l10n.takePhoto,
                   value: 'camera'),
               Divider(color: scheme.outlineVariant, height: 1),
               _fileOption(context,
                   icon: Icons.photo_library,
-                  title: 'Choose from Gallery',
+                  title: l10n.chooseFromGallery,
                   value: 'gallery'),
               Divider(color: scheme.outlineVariant, height: 1),
               _fileOption(context,
                   icon: Icons.insert_drive_file,
-                  title: 'Choose PDF / File',
+                  title: l10n.choosePdfFile,
                   value: 'file'),
               Divider(color: scheme.outlineVariant, height: 1),
               _fileOption(context,
-                  icon: Icons.close, title: 'Cancel', value: null),
+                  icon: Icons.close, title: l10n.cancel, value: null),
             ],
           ),
         ),
@@ -236,7 +239,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
         if (!mounted) return;
         SnackBarHelper.showError(
           context,
-          'Permission denied. Cannot attach files.',
+          AppLocalizations.of(context)!.cannotAttachFiles,
         );
         return;
       }
@@ -273,7 +276,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
           if (!mounted) return;
           SnackBarHelper.showError(
             context,
-            'Permission denied. Cannot attach files.',
+            AppLocalizations.of(context)!.cannotAttachFiles,
           );
           return;
         }
@@ -283,7 +286,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
           if (!mounted) return;
           SnackBarHelper.showWarning(
             context,
-            'Permission permanently denied. Opening settings...',
+            AppLocalizations.of(context)!.permissionPermanentlyDenied,
           );
           await Future.delayed(const Duration(seconds: 2));
           await openAppSettings();
@@ -305,7 +308,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
           if (!mounted) return;
           SnackBarHelper.showError(
             context,
-            'Camera permission required',
+            AppLocalizations.of(context)!.cameraPermissionRequired,
           );
           return;
         }
@@ -338,7 +341,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
         if (!mounted) return;
         SnackBarHelper.showSuccess(
           context,
-          'Attached: ${result.name}',
+          AppLocalizations.of(context)!.attached(result.name),
         );
       }
     } catch (e) {
@@ -380,16 +383,30 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
       _userLng = null;
     });
 
-    final result = await requestLocationPermissionWithExplanation(context);
-    if (!mounted) return;
-
-    if (result != LocationPermissionResult.granted) {
-      handlePermissionResult(context, result: result);
-      setState(() => _detecting = false);
-      return;
-    }
-
     try {
+      // First, check if location permission is already granted
+      final permission = await Geolocator.checkPermission();
+      
+      LocationPermissionResult result;
+      
+      if (permission == LocationPermission.whileInUse || 
+          permission == LocationPermission.always) {
+        // Permission already granted, no need to show dialog
+        result = LocationPermissionResult.granted;
+      } else {
+        // Permission not granted, show dialog and request
+        result = await requestLocationPermissionWithExplanation(context);
+      }
+      
+      if (!mounted) return;
+
+      if (result != LocationPermissionResult.granted) {
+        handlePermissionResult(context, result: result);
+        setState(() => _detecting = false);
+        return;
+      }
+
+      // Get current position
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
@@ -398,47 +415,35 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
       final lat = position.latitude;
       final lng = position.longitude;
 
-      final confirmed = await Navigator.of(context).push<MapLocationResult>(
-        MaterialPageRoute(
-          builder: (ctx) => MapLocationPicker(
-            initialLatitude: lat,
-            initialLongitude: lng,
-            onConfirm: (res) => Navigator.of(ctx).pop(res),
-          ),
-        ),
-      );
-
-      if (confirmed != null && mounted) {
+      // Get address directly
+      final address = await _reverseGeocode(lat, lng);
+      
+      if (mounted) {
         setState(() {
-          _userLat = confirmed.latitude;
-          _userLng = confirmed.longitude;
-          _detectedAddress = confirmed.address;
+          _userLat = lat;
+          _userLng = lng;
+          _detectedAddress = address ??
+              '${lat.toStringAsFixed(5)}, ${lng.toStringAsFixed(5)}';
           _locationDetected = true;
         });
-        if (_detectedAddress == null || _detectedAddress!.isEmpty) {
-          final address =
-              await _reverseGeocode(confirmed.latitude, confirmed.longitude);
-          if (mounted) {
-            setState(() => _detectedAddress = address ??
-                '${confirmed.latitude.toStringAsFixed(5)}, ${confirmed.longitude.toStringAsFixed(5)}');
-          }
-        }
-        if (mounted) {
-          SnackBarHelper.showSuccess(context, 'Location confirmed');
-        }
+        
+        SnackBarHelper.showSuccess(
+          context,
+          AppLocalizations.of(context)!.locationDetectedSuccessfully,
+        );
       }
     } on LocationServiceDisabledException {
       if (mounted) {
         SnackBarHelper.showError(
           context,
-          'Location services are disabled. Please turn on GPS.',
+          AppLocalizations.of(context)!.locationServicesDisabled,
         );
       }
     } on Exception catch (e) {
       if (mounted) {
         SnackBarHelper.showError(
           context,
-          'Could not get location: ${e.toString()}',
+          '${AppLocalizations.of(context)!.couldNotGetLocation}: ${e.toString()}',
         );
       }
     } finally {
@@ -451,13 +456,16 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
   Future<void> _onSubmit() async {
     final issueText = _descriptionController.text.trim();
     if (issueText.isEmpty) {
-      SnackBarHelper.showError(context, 'Please describe the issue.');
+      SnackBarHelper.showError(
+        context,
+        AppLocalizations.of(context)!.pleaseDescribeIssue,
+      );
       return;
     }
     if (!_locationDetected) {
       SnackBarHelper.showError(
         context,
-        'Please detect your location first.',
+        AppLocalizations.of(context)!.pleaseDetectLocation,
       );
       return;
     }
@@ -509,7 +517,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
       if (mounted) {
         SnackBarHelper.showError(
           context,
-          'Failed to submit request: ${e.toString()}',
+          '${AppLocalizations.of(context)!.failedToSubmitRequest}: ${e.toString()}',
         );
       }
     } finally {
@@ -607,10 +615,11 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
 
   Widget _attachedChips() {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     
     if (_attachedFiles.isEmpty) {
       return Text(
-        'No photos attached',
+        l10n.noPhotosAttached,
         style: TextStyle(color: scheme.onSurface.withOpacity(0.7)),
       );
     }
@@ -630,8 +639,9 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
 
   Widget _vehicleSelector() {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     
-    Widget btn(String type, IconData icon) {
+    Widget btn(String type, IconData icon, String label) {
       final selected = _selectedVehicle == type;
       return Expanded(
         child: GestureDetector(
@@ -653,7 +663,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  type,
+                  label,
                   style: TextStyle(
                     color: selected ? scheme.onPrimary : scheme.onSurface,
                   ),
@@ -667,9 +677,9 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
 
     return Row(
       children: [
-        btn('Car', Icons.directions_car),
-        btn('Motorcycle', Icons.motorcycle),
-        btn('Truck', Icons.local_shipping),
+        btn('Car', Icons.directions_car, l10n.car),
+        btn('Motorcycle', Icons.motorcycle, l10n.motorcycle),
+        btn('Truck', Icons.local_shipping, l10n.truck),
       ],
     );
   }
@@ -677,10 +687,11 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create Service Request'),
+        title: Text(l10n.createServiceRequest),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
@@ -704,7 +715,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                     if (_mechanic != null) _mechanicHeader(),
                     const SizedBox(height: 4),
                     Text(
-                      'Request Details',
+                      l10n.requestDetails,
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -713,7 +724,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Provide details so a mechanic can assist you quickly.',
+                      l10n.provideDetailsQuickly,
                       style: TextStyle(
                         color: scheme.onSurface.withOpacity(0.7),
                       ),
@@ -724,7 +735,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                         Icon(Icons.local_taxi, color: scheme.primary),
                         const SizedBox(width: 8),
                         Text(
-                          'Select Vehicle Type',
+                          l10n.selectVehicleType,
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             color: scheme.onSurface,
@@ -740,7 +751,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                         Icon(Icons.build, color: scheme.primary),
                         const SizedBox(width: 8),
                         Text(
-                          'Describe the Issue',
+                          l10n.describeTheIssue,
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             color: scheme.onSurface,
@@ -755,8 +766,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                       maxLines: 8,
                       style: TextStyle(color: scheme.onSurface),
                       decoration: InputDecoration(
-                        hintText:
-                            "Describe the problem (e.g., engine stalls when idling)...",
+                        hintText: l10n.describeIssuePlaceholder,
                         hintStyle: TextStyle(
                           color: scheme.onSurface.withOpacity(0.6),
                         ),
@@ -781,7 +791,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                             color: scheme.onPrimary,
                           ),
                           label: Text(
-                            'Attach Photo',
+                            l10n.attachPhoto,
                             style: TextStyle(color: scheme.onPrimary),
                           ),
                           style: ElevatedButton.styleFrom(
@@ -798,7 +808,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                         Icon(Icons.place, color: scheme.primary),
                         const SizedBox(width: 8),
                         Text(
-                          'Your Location',
+                          l10n.yourLocation,
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             color: scheme.onSurface,
@@ -821,7 +831,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                                   color: scheme.onPrimary,
                                 ),
                           label: Text(
-                            _detecting ? 'Detecting...' : 'Detect My Location',
+                            _detecting ? l10n.detecting : l10n.detectMyLocation,
                             style: TextStyle(color: scheme.onPrimary),
                           ),
                           style: ElevatedButton.styleFrom(
@@ -841,7 +851,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                           border: Border.all(color: scheme.tertiary),
                         ),
                         child: Text(
-                          'Live location detected successfully!',
+                          l10n.liveLocationDetected,
                           style: TextStyle(color: scheme.onTertiaryContainer),
                         ),
                       ),
@@ -866,7 +876,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                       const SizedBox(height: 12),
                     ] else
                       Text(
-                        'Location not detected. Tap "Detect My Location" to set your location on the map.',
+                        l10n.locationNotDetectedTap,
                         style: TextStyle(
                           color: scheme.onSurface.withOpacity(0.7),
                         ),
@@ -889,7 +899,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                         label: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 14.0),
                           child: Text(
-                            _submitting ? 'Submitting...' : 'Submit Request',
+                            _submitting ? l10n.submitting : l10n.submitRequest,
                             style: TextStyle(color: scheme.onPrimary),
                           ),
                         ),
@@ -901,7 +911,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                     const SizedBox(height: 12),
                     Center(
                       child: Text(
-                        'Tip: Provide clear description and photos for faster help.',
+                        l10n.tipProvideDescription,
                         style: TextStyle(
                           color: scheme.onSurface.withOpacity(0.7),
                         ),
@@ -913,9 +923,9 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                         Expanded(
                           child: OutlinedButton(
                             onPressed: () => Navigator.pop(context),
-                            child: const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 12.0),
-                              child: Text('Cancel'),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 12.0),
+                              child: Text(l10n.cancel),
                             ),
                           ),
                         ),

@@ -1,7 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-/// Firestore service for handling service requests, counts & earnings
+/// Firestore service for handling service requests (USER-SIDE ONLY)
+/// 
+/// Mechanic-specific functions have been moved to the mechanic app:
+/// - acceptRequest, rejectRequest, completeRequest
+/// - getIncomingRequestsStream, getMechanicRequestsByStatusStream
+/// - getActiveRequestsCountStream, getCompletedRequestsCountStream
+/// - getTotalEarningsStream, getDailyEarningsStream
 class RequestFirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -9,9 +15,11 @@ class RequestFirestoreService {
   String? get _currentUserId => _auth.currentUser?.uid;
 
   // =========================================================
-  // USER SIDE
+  // CREATE REQUEST
   // =========================================================
 
+  /// Creates a new service request
+  /// Used by: CreateRequestScreen
   Future<String> createRequest({
     required String vehicleType,
     required String issue,
@@ -46,6 +54,12 @@ class RequestFirestoreService {
     return requestRef.id;
   }
 
+  // =========================================================
+  // GET USER REQUESTS
+  // =========================================================
+
+  /// Get all requests created by the current user
+  /// Used by: MyRequestsScreen
   Stream<List<Map<String, dynamic>>> getUserRequestsStream() {
     final userId = _currentUserId;
     if (userId == null) return Stream.value([]);
@@ -58,9 +72,46 @@ class RequestFirestoreService {
         .map(_mapSnapshot);
   }
 
+  /// Get a single request by ID
+  /// Used by: RequestDetailScreen
+  Future<Map<String, dynamic>?> getRequestById(String requestId) async {
+    final doc = await _db.collection('requests').doc(requestId).get();
+    if (!doc.exists) return null;
+    return _mapDoc(doc);
+  }
+
+  /// Stream a single request by ID
+  /// Used by: TrackMechanicScreen, RequestDetailScreen (real-time updates)
+  Stream<Map<String, dynamic>?> getRequestStream(String requestId) {
+    return _db
+        .collection('requests')
+        .doc(requestId)
+        .snapshots()
+        .map((doc) => doc.exists ? _mapDoc(doc) : null);
+  }
+
+  // =========================================================
+  // CANCEL REQUEST
+  // =========================================================
+
+  /// Cancel a request (only if status is 'pending')
+  /// Used by: RequestDetailScreen, MyRequestsScreen
   Future<void> cancelRequest(String requestId) async {
     final userId = _currentUserId;
     if (userId == null) throw Exception('User not logged in');
+
+    // Verify the request belongs to the current user
+    final doc = await _db.collection('requests').doc(requestId).get();
+    if (!doc.exists) throw Exception('Request not found');
+    
+    final data = doc.data();
+    if (data?['userId'] != userId) {
+      throw Exception('Unauthorized: This request does not belong to you');
+    }
+
+    if (data?['status'] != 'pending') {
+      throw Exception('Can only cancel pending requests');
+    }
 
     await _db.collection('requests').doc(requestId).update({
       'status': 'cancelled',
@@ -69,143 +120,14 @@ class RequestFirestoreService {
   }
 
   // =========================================================
-  // MECHANIC SIDE
+  // GET USER PROFILE
   // =========================================================
 
-  Future<void> acceptRequest({
-    required String requestId,
-    required String mechanicId,
-  }) async {
-    final mechanicDoc =
-        await _db.collection('mechanics').doc(mechanicId).get();
-
-    if (!(mechanicDoc.data()?['isOnline'] ?? false)) {
-      throw Exception('Mechanic is offline');
-    }
-
-    await _db.collection('requests').doc(requestId).update({
-      'mechanicId': mechanicId,
-      'status': 'accepted',
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-  }
-
-  Future<void> rejectRequest(String requestId) async {
-    await _db.collection('requests').doc(requestId).update({
-      'status': 'rejected',
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-  }
-
-  Future<void> completeRequest(String requestId, double amount) async {
-    await _db.collection('requests').doc(requestId).update({
-      'status': 'completed',
-      'amount': amount,
-      'completedAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-  }
-
-  // =========================================================
-  // COUNTS & EARNINGS
-  // =========================================================
-
-  Stream<int> getActiveRequestsCountStream(String mechanicId) {
-    return _db
-        .collection('requests')
-        .where('mechanicId', isEqualTo: mechanicId)
-        .where('status', isEqualTo: 'accepted')
-        .snapshots()
-        .map((s) => s.docs.length);
-  }
-
-  Stream<int> getCompletedRequestsCountStream(String mechanicId) {
-    return _db
-        .collection('requests')
-        .where('mechanicId', isEqualTo: mechanicId)
-        .where('status', isEqualTo: 'completed')
-        .snapshots()
-        .map((s) => s.docs.length);
-  }
-
-  Stream<double> getTotalEarningsStream(String mechanicId) {
-    return _db
-        .collection('requests')
-        .where('mechanicId', isEqualTo: mechanicId)
-        .where('status', isEqualTo: 'completed')
-        .snapshots()
-        .map((s) => s.docs.fold<double>(
-            0, (sum, d) => sum + (d['amount'] ?? 0)));
-  }
-
-  // ── RESTORED: required by mechanic screens ──────────────────────────────
-
-  /// Returns pending requests that have no mechanic assigned yet.
-  /// Used by IncomingRequestsScreen and MechanicHomeScreen badge.
-  Stream<List<Map<String, dynamic>>> getIncomingRequestsStream({
-    required String mechanicId,
-    required bool isOnline,
-  }) {
-    if (!isOnline) return Stream.value([]);
-
-    return _db
-        .collection('requests')
-        .where('status', isEqualTo: 'pending')
-        .snapshots()
-        .map((s) => s.docs
-            .where((d) => d['mechanicId'] == null)
-            .map(_mapDoc)
-            .toList());
-  }
-
-  /// Count of unassigned pending requests.
-  /// Used by MechanicHomeScreen for the badge counter.
-  Stream<int> getIncomingRequestsCountStream({
-    required String mechanicId,
-    required bool isOnline,
-  }) {
-    if (!isOnline) return Stream.value(0);
-
-    return _db
-        .collection('requests')
-        .where('status', isEqualTo: 'pending')
-        .snapshots()
-        .map((s) =>
-            s.docs.where((d) => d['mechanicId'] == null).length);
-  }
-
-  /// Returns requests assigned to a specific mechanic filtered by status.
-  /// Used by ActiveServiceScreen and ServiceHistoryScreen.
-  Stream<List<Map<String, dynamic>>> getMechanicRequestsByStatusStream(
-    String mechanicId,
-    String status,
-  ) {
-    return _db
-        .collection('requests')
-        .where('mechanicId', isEqualTo: mechanicId)
-        .where('status', isEqualTo: status)
-        .snapshots()
-        .map(_mapSnapshot);
-  }
-
-  /// Fetches user profile data (name, phone, etc.).
-  /// Used by IncomingRequestsScreen and ServiceHistoryScreen to show user info.
-  Future<Map<String, dynamic>?> getUserProfile(String userId) async {
-    final doc = await _db.collection('users').doc(userId).get();
+  /// Fetches mechanic profile data (name, phone, etc.) for display
+  /// Used by: RequestDetailScreen, ChatMechanicScreen
+  Future<Map<String, dynamic>?> getMechanicProfile(String mechanicId) async {
+    final doc = await _db.collection('mechanics').doc(mechanicId).get();
     return doc.exists ? doc.data() : null;
-  }
-
-  /// Returns completed requests grouped by day for earnings breakdown.
-  /// Used by EarningsScreen to show daily earnings list.
-  Stream<List<Map<String, dynamic>>> getDailyEarningsStream(
-    String mechanicId,
-  ) {
-    return _db
-        .collection('requests')
-        .where('mechanicId', isEqualTo: mechanicId)
-        .where('status', isEqualTo: 'completed')
-        .snapshots()
-        .map((s) => s.docs.map(_mapDoc).toList());
   }
 
   // =========================================================
@@ -218,18 +140,23 @@ class RequestFirestoreService {
   }
 
   Map<String, dynamic> _mapDoc(
-      QueryDocumentSnapshot<Map<String, dynamic>> doc) {
+      DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data();
+    if (d == null) return {};
     return {
       'requestId': d['requestId'] ?? doc.id,
       'userId': d['userId'],
       'mechanicId': d['mechanicId'],
       'vehicleType': d['vehicleType'],
       'issue': d['issue'],
+      'location': d['location'],
+      'locationAddress': d['locationAddress'],
       'status': d['status'],
+      'images': d['images'] ?? [],
       'userLat': d['userLat'],
       'userLng': d['userLng'],
       'createdAt': (d['createdAt'] as Timestamp?)?.toDate(),
+      'updatedAt': (d['updatedAt'] as Timestamp?)?.toDate(),
       'completedAt': (d['completedAt'] as Timestamp?)?.toDate(),
       'amount': d['amount'] ?? 0,
     };

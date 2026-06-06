@@ -1,157 +1,87 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'l10n/app_localizations.dart';
 
 import 'theme.dart';
 import 'theme_controller.dart';
-import 'core/locale_provider.dart';
-import 'l10n/app_localizations.dart';
+import 'locale_provider.dart';
 import 'services/auth_service.dart';
+import 'services/notification_service.dart';
 
-// SCREENS
-import 'screens/welcome_screen.dart';
 import 'screens/login_screen.dart';
-import 'screens/register_user_screen.dart';
-import 'screens/register_mechanic_screen.dart';
-import 'screens/shop_location_picker_screen.dart';
-import 'screens/forgot_password_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/my_requests_screen.dart';
 import 'screens/create_request_screen.dart';
 import 'screens/request_success_screen.dart';
 import 'screens/settings_screen.dart';
-import 'screens/mechanic/mechanic_root_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // 🔥 REQUIRED FOR FIREBASE
   await Firebase.initializeApp();
+  await initializeDateFormatting();
+  
+  // Initialize Notification Service
+  await NotificationService().initialize();
 
-  // 🔥 INITIALIZE LOCALE PROVIDER (loads saved locale or detects device)
-  final localeProvider = LocaleProvider();
-  await localeProvider.init();
-
-  runZonedGuarded(
-    () => runApp(
-      // ═══════════════════════════════════════════════════════════════════════
-      // MULTI-PROVIDER SETUP - Theme + Locale
-      // ═══════════════════════════════════════════════════════════════════════
-      MultiProvider(
-        providers: [
-          ChangeNotifierProvider(create: (_) => ThemeController()),
-          ChangeNotifierProvider.value(value: localeProvider),
-        ],
-        child: const MechResQApp(),
-      ),
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeController()),
+        ChangeNotifierProvider(create: (_) => LocaleProvider()),
+      ],
+      child: const MechResQApp(),
     ),
-    (error, stack) {
-      debugPrint('Uncaught Error: $error');
-      debugPrintStack(stackTrace: stack);
-    },
   );
 }
-
-// ======================================================
-// APP
-// ======================================================
 
 class MechResQApp extends StatelessWidget {
   const MechResQApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // ═══════════════════════════════════════════════════════════════════════
-    // WATCH PROVIDERS - App rebuilds when theme or locale changes
-    // ═══════════════════════════════════════════════════════════════════════
     final themeController = context.watch<ThemeController>();
     final localeProvider = context.watch<LocaleProvider>();
 
     return MaterialApp(
-      title: 'MechResQ',
       debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme(),
+      darkTheme: AppTheme.hazardTheme(),
+      themeMode: themeController.themeMode,
       
-      // ═══════════════════════════════════════════════════════════════════════
-      // LOCALIZATION CONFIGURATION
-      // ═══════════════════════════════════════════════════════════════════════
-      locale: localeProvider.locale, // 🔥 CRITICAL: Reactive locale switching
-      
-      supportedLocales: AppLocalizations.supportedLocales,
-      
+      // Localization setup
+      locale: localeProvider.locale,
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      supportedLocales: const [
+        Locale('en'), // English
+        Locale('kn'), // Kannada (Proof of Concept)
+        // Future languages:
+        // Locale('hi'), // Hindi
+        // Locale('ta'), // Tamil
+        // Locale('te'), // Telugu
+      ],
       
-      // ═══════════════════════════════════════════════════════════════════════
-      // THEME CONFIGURATION
-      // ═══════════════════════════════════════════════════════════════════════
-      theme: ThemeData.light().copyWith(
-        colorScheme: ColorScheme.light(
-          primary: const Color(0xFFFFD700), // Yellow
-          secondary: const Color(0xFF263238),
-        ),
-      ),
-      darkTheme: AppTheme.hazardTheme(), // Your brand dark theme
-      themeMode: themeController.themeMode, // 🔥 CRITICAL: Reactive theme switching
-
-      // Always start with Splash
       home: const SplashScreen(),
-
       routes: {
-        '/welcome': (_) => const WelcomeScreen(),
-        '/login': (_) => LoginScreen(),
-        '/forgot_password': (_) => ForgotPasswordScreen(),
-
-        // REGISTER
-        '/register_user': (_) => const UserRegisterScreen(),
-        '/register_mechanic': (_) => const MechanicRegisterScreen(),
-        '/shop_location_picker': (_) => ShopLocationPickerScreen(),
-
-        // USER
+        '/login': (_) => const LoginScreen(),
         '/home': (_) => const MechanicListScreen(),
         '/profile': (_) => ProfileScreen(),
         '/my_requests': (_) => MyRequestsScreen(),
         '/create_request': (_) => const CreateRequestScreen(),
-        '/request_success': (context) {
-          // RequestSuccessScreen reads arguments from ModalRoute.of(context) in its build method
-          return const RequestSuccessScreen();
-        },
+        '/request_success': (_) => const RequestSuccessScreen(),
         '/settings': (_) => const SettingsScreen(),
-
-        // MECHANIC
-        '/mechanic_root': (_) => const MechanicRootScreen(),
-      },
-      onUnknownRoute: (settings) {
-        return MaterialPageRoute(
-          builder: (context) {
-            // Use localized error message if l10n available
-            final l10n = AppLocalizations.of(context);
-            
-            return Scaffold(
-              body: Center(
-                child: Text(
-                  l10n != null
-                      ? '${l10n.error}: ${settings.name ?? "unknown"}'
-                      : 'Route not found: ${settings.name}',
-                ),
-              ),
-            );
-          },
-        );
       },
     );
   }
 }
-
-// ======================================================
-// SPLASH (AUTH + ROLE DECIDER)
-// ======================================================
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -169,46 +99,61 @@ class _SplashScreenState extends State<SplashScreen> {
     _decideNavigation();
   }
 
-  Future<void> _decideNavigation() async {
-    await Future.delayed(const Duration(milliseconds: 800));
+    Future<void> _decideNavigation() async {
+    await Future.delayed(const Duration(milliseconds: 1500));
     if (!mounted) return;
 
-    final isLoggedIn = await _auth.isLoggedIn();
+    try {
+      final isLoggedIn = _auth.isLoggedIn();
+      if (!isLoggedIn) {
+        _navigate('/login');
+        return;
+      }
 
-    if (!isLoggedIn) {
-      _go('/welcome');
-      return;
-    }
+      final role = await _auth.getRole().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => null,
+      );
 
-    final role = await _auth.getRole();
+      if (!mounted) return;
 
-    if (role == 'mechanic') {
-      _go('/mechanic_root');
-    } else if (role == 'user') {
-      _go('/home');
-    } else {
-      // Safety fallback
-      await _auth.logout();
-      _go('/welcome');
+      if (role == 'user') {
+        _navigate('/home');
+      } else {
+        await _auth.logout();
+        _navigate('/login');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _navigate('/login');
     }
   }
 
-  void _go(String route) {
+  void _navigate(String route) {
     Navigator.pushReplacementNamed(context, route);
   }
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFF263238),
+    final scheme = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      backgroundColor: scheme.surface,
       body: Center(
-        child: Text(
-          'MechResQ',
-          style: TextStyle(
-            fontSize: 36,
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: scheme.primary),
+            const SizedBox(height: 16),
+            Text(
+              'MechResQ',
+              style: TextStyle(
+                fontSize: 36,
+                fontWeight: FontWeight.bold,
+                color: scheme.primary,
+              ),
+            ),
+          ],
         ),
       ),
     );

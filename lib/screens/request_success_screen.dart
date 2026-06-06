@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
+
 class RequestSuccessScreen extends StatefulWidget {
   /// Expects args map: { 'vehicle': 'Car', 'summary': 'short text' }
   const RequestSuccessScreen({super.key});
@@ -47,6 +49,7 @@ class _RequestSuccessScreenState extends State<RequestSuccessScreen>
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     final args = ModalRoute.of(context)?.settings.arguments;
     final map = (args is Map<String, dynamic>) ? args : <String, dynamic>{};
 
@@ -55,7 +58,7 @@ class _RequestSuccessScreenState extends State<RequestSuccessScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Request Submitted'),
+        title: Text(l10n.requestSubmittedTitle),
         automaticallyImplyLeading: false,
       ),
       body: Center(
@@ -115,7 +118,7 @@ class SuccessCard extends StatelessWidget {
 
             // Title
             Text(
-              'Request Sent',
+              AppLocalizations.of(context)!.requestSent,
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -127,7 +130,7 @@ class SuccessCard extends StatelessWidget {
 
             // Description
             Text(
-              'Your $vehicle service request has been submitted successfully. A nearby mechanic will contact you shortly.',
+              AppLocalizations.of(context)!.vehicleServiceRequestSubmitted(vehicle),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: scheme.onSurface.withOpacity(0.7),
@@ -140,7 +143,7 @@ class SuccessCard extends StatelessWidget {
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'Summary',
+                  AppLocalizations.of(context)!.summary,
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     color: scheme.onSurface,
@@ -172,9 +175,9 @@ class SuccessCard extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.list),
-                label: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 14.0),
-                  child: Text('View My Requests'),
+                label: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 14.0),
+                  child: Text(AppLocalizations.of(context)!.viewMyRequests),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: scheme.primary,
@@ -195,7 +198,7 @@ class SuccessCard extends StatelessWidget {
                 '/home',
                 (r) => false,
               ),
-              child: const Text('Back to Home'),
+              child: Text(AppLocalizations.of(context)!.backToHome),
             ),
           ],
         ),

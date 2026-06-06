@@ -1,19 +1,22 @@
-// lib/screens/home_screen.dart
-
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
+import '../l10n/app_localizations.dart';
 
 import '../services/mechanic_firestore_service.dart';
 import '../services/auth_service.dart';
-import '../utils/snackbar_helper.dart';
-import 'mechanic_detail_screen.dart';
+import '../services/notification_service.dart';
+import '../services/location_service.dart';
 import '../widgets/mechanic_card.dart';
 import '../screens/help_screen.dart';
+import 'mechanic_detail_screen.dart';
 import 'my_vehicles_screen.dart';
+import 'my_requests_screen.dart';
 import 'profile_screen.dart';
 import 'settings_screen.dart';
-import 'resq_assist_screen.dart';
-
-enum SelectedSection { mechanics, vehicles, help }
+import 'sos_screen.dart';
+import 'service_reminders_screen.dart';
 
 class MechanicListScreen extends StatefulWidget {
   const MechanicListScreen({super.key});
@@ -26,15 +29,19 @@ class _MechanicListScreenState extends State<MechanicListScreen> {
   final TextEditingController _searchController = TextEditingController();
   final AuthService _auth = AuthService();
   final MechanicFirestoreService _mechanicService = MechanicFirestoreService();
+  final NotificationService _notificationService = NotificationService();
+  final LocationService _locationService = LocationService();
 
-  SelectedSection _selected = SelectedSection.mechanics;
+  int _currentIndex = 0; // 0=Home, 1=Requests, 2=RequestHelp, 3=Vehicles
 
   Map<String, dynamic>? _profile;
+  bool _showVehicleAddForm = false;
+  String? _currentLocationAddress; // Store current location address
 
-  // filter UI state
-  int? _expYears; // e.g., 1,2,3...
+  // filter state
+  int? _expYears;
   List<String> _selectedVehicleTypes = [];
-  String? _priceRange; // e.g., "100-200"
+  String? _priceRange;
   double? _maxDistanceKm;
   double? _minRating;
 
@@ -42,31 +49,198 @@ class _MechanicListScreenState extends State<MechanicListScreen> {
   void initState() {
     super.initState();
     _loadProfile();
+    // Schedule permission check after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndRequestPermissions();
+    });
+  }
+
+  /// Load current location address
+  Future<void> _loadCurrentLocation() async {
+    try {
+      final address = await _locationService.getCurrentAddress();
+      if (mounted) {
+        setState(() {
+          _currentLocationAddress = address;
+        });
+      }
+    } catch (e) {
+      print('Error loading location: $e');
+      if (mounted) {
+        setState(() {
+          _currentLocationAddress = 'Location unavailable';
+        });
+      }
+    }
+  }
+
+  /// Check and request permissions with proper sequencing
+  Future<void> _checkAndRequestPermissions() async {
+    print('📍 Starting permission check...');
+    
+    // Wait 1 second before starting
+    await Future.delayed(const Duration(seconds: 1));
+    if (!mounted) {
+      print('📍 Widget not mounted, skipping permission dialog');
+      return;
+    }
+
+    // STEP 1: Request location permission FIRST
+    print('📍 Requesting location permission...');
+    final locationGranted = await _requestLocationPermission();
+    
+    if (locationGranted) {
+      print('📍 Location permission granted, loading location...');
+      await _loadCurrentLocation();
+    } else {
+      print('📍 Location permission denied');
+    }
+
+    // STEP 2: Wait 2 seconds after location permission response
+    print('🔔 Waiting 2 seconds before notification permission...');
+    await Future.delayed(const Duration(seconds: 2));
+    if (!mounted) {
+      print('🔔 Widget not mounted, skipping notification dialog');
+      return;
+    }
+
+    // STEP 3: Now request notification permission
+    print('🔔 Checking SharedPreferences...');
+    final prefs = await SharedPreferences.getInstance();
+    final hasAsked = prefs.getBool('notification_permission_asked') ?? false;
+
+    if (hasAsked) {
+      print('🔔 Already asked before, skipping dialog');
+      return;
+    }
+
+    print('🔔 Checking current notification permission status...');
+    final hasPermission = await _notificationService.checkPermissions();
+    if (hasPermission) {
+      print('🔔 Already has notification permission');
+      await prefs.setBool('notification_permission_asked', true);
+      return;
+    }
+
+    // Show custom notification permission dialog
+    if (!mounted) {
+      print('🔔 Widget not mounted before showing dialog');
+      return;
+    }
+    
+    print('🔔 Showing notification permission dialog...');
+    final shouldRequest = await _showNotificationPermissionDialog();
+
+    if (shouldRequest == true) {
+      print('🔔 User clicked Allow, requesting notification permissions...');
+      final granted = await _notificationService.requestPermissions();
+      await prefs.setBool('notification_permission_asked', true);
+      
+      if (granted) {
+        print('🔔 Notification permission granted');
+      }
+    } else {
+      print('🔔 User declined notification permission');
+      await prefs.setBool('notification_permission_asked', true);
+    }
+  }
+
+  /// Show custom notification permission dialog
+  Future<bool?> _showNotificationPermissionDialog() {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.notifications_active, 
+              color: Theme.of(context).colorScheme.primary, size: 28),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text('Stay Updated', style: TextStyle(fontSize: 20)),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Allow MechResQ to send notifications to get:',
+              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15),
+            ),
+            const SizedBox(height: 12),
+            _buildPermissionBenefit(Icons.location_on, 'Real-time mechanic location updates'),
+            _buildPermissionBenefit(Icons.schedule, 'Accurate ETA and arrival notifications'),
+            _buildPermissionBenefit(Icons.check_circle, 'Service status updates'),
+            _buildPermissionBenefit(Icons.campaign, 'Mechanic nearby alerts'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Not Now'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: const Text('Allow'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPermissionBenefit(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(text, style: const TextStyle(fontSize: 14)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Request location permission and return whether it was granted
+  Future<bool> _requestLocationPermission() async {
+    final hasPermission = await _locationService.hasPermission();
+    if (!hasPermission) {
+      final permission = await _locationService.requestPermission();
+      // Check if permission was granted (either always or whileInUse)
+      return permission == LocationPermission.always || 
+             permission == LocationPermission.whileInUse;
+    }
+    return true; // Already has permission
   }
 
   Future<void> _loadProfile() async {
     try {
       final p = await _auth.getCurrentUserProfile();
-
       if (!mounted) return;
-
       setState(() {
         _profile = p != null ? Map<String, dynamic>.from(p) : null;
       });
     } catch (e) {
       if (!mounted) return;
-
       setState(() => _profile = null);
     }
   }
 
-  /// Filter mechanics list by search query and filters
   List<Map<String, dynamic>> _filterMechanics(
     List<Map<String, dynamic>> mechanics,
   ) {
     var filtered = List<Map<String, dynamic>>.from(mechanics);
 
-    // Apply search filter
     final searchQuery = _searchController.text.trim().toLowerCase();
     if (searchQuery.isNotEmpty) {
       filtered = filtered.where((m) {
@@ -81,7 +255,6 @@ class _MechanicListScreenState extends State<MechanicListScreen> {
       }).toList();
     }
 
-    // Apply other filters
     if (_minRating != null) {
       filtered = filtered.where((m) {
         final rating = (m['rating'] ?? 0.0) as double;
@@ -98,9 +271,6 @@ class _MechanicListScreenState extends State<MechanicListScreen> {
       }).toList();
     }
 
-    // Note: experienceYears, priceRange, and distanceKm are not in Firestore schema
-    // so those filters won't work until those fields are added to Firestore
-
     return filtered;
   }
 
@@ -113,22 +283,18 @@ class _MechanicListScreenState extends State<MechanicListScreen> {
       _minRating = null;
       _searchController.clear();
     });
-    // close endDrawer if open
     Navigator.of(context).maybePop();
   }
 
   void _applyFilters() {
     setState(() {});
-    // close endDrawer if open
     Navigator.of(context).maybePop();
   }
 
-  /// Convert Map<String, dynamic> to Map<String, String> for MechanicCard
   Map<String, String> _convertToCardFormat(Map<String, dynamic> mechanic) {
     final vehicleTypes = (mechanic['vehicleTypes'] as List? ?? [])
         .map((e) => e.toString())
         .toList();
-
     final rating = (mechanic['rating'] as num?)?.toDouble() ?? 0.0;
     final distanceKm = (mechanic['distanceKm'] as num?)?.toDouble() ?? 0.0;
 
@@ -155,7 +321,8 @@ class _MechanicListScreenState extends State<MechanicListScreen> {
       mechanic: map,
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => MechanicDetailScreen(mechanic: map)),
+        MaterialPageRoute(
+            builder: (_) => MechanicDetailScreen(mechanic: map)),
       ),
     );
   }
@@ -166,7 +333,6 @@ class _MechanicListScreenState extends State<MechanicListScreen> {
     super.dispose();
   }
 
-  // helper chips for vehicle types found across all mechanics
   List<String> _allVehicleTypes(List<Map<String, dynamic>> mechanics) {
     final s = <String>{};
     for (var m in mechanics) {
@@ -178,176 +344,459 @@ class _MechanicListScreenState extends State<MechanicListScreen> {
     return s.toList();
   }
 
-  void _selectSection(SelectedSection s) {
-    Navigator.pop(context); // close drawer
-    setState(() => _selected = s);
-  }
-
-  /// Navigate to My Requests screen (separate flow, not a tab)
-  void _openMyRequests() {
-    Navigator.pop(context); // close drawer
-    Navigator.pushNamed(context, '/my_requests');
-  }
-
-  Future<void> _handleLogout() async {
-    await _auth.logout();
-    if (!mounted) return;
-    Navigator.pushNamedAndRemoveUntil(context, '/login', (r) => false);
-  }
-
-  Widget _buildSelectedContent() {
-    switch (_selected) {
-      case SelectedSection.vehicles:
-        return const MyVehiclesScreen(key: ValueKey('vehicles'));
-
-      case SelectedSection.help:
-        return HelpScreen();
-
-      case SelectedSection.mechanics:
-        return _buildMechanicsList();
-    }
-  }
-
-  // ================= SOS DIALOG =================
-  void _showSOSDialog() {
-    final scheme = Theme.of(context).colorScheme;
+  /// Build Location Chip (Rapido-style)
+  Widget _buildLocationChip(ColorScheme scheme) {
+    final l10n = AppLocalizations.of(context)!;
     
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: scheme.surface,
-        title: Row(
+    return GestureDetector(
+      onTap: () async {
+        // Reload location when tapped
+        await _loadCurrentLocation();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(
+            color: scheme.outline.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+        child: Row(
           children: [
-            Icon(Icons.sos, color: scheme.error),
+            // Green dot indicator
+            Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.green.shade600,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.green.withOpacity(0.3),
+                    blurRadius: 4,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            
+            // Location address
+            Expanded(
+              child: _currentLocationAddress == null
+                  ? Row(
+                      children: [
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation(scheme.primary),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          l10n.fetchingLocation,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: scheme.onSurface.withOpacity(0.6),
+                          ),
+                        ),
+                      ],
+                    )
+                  : Text(
+                      _currentLocationAddress!,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: scheme.onSurface,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+            ),
+            
             const SizedBox(width: 8),
-            Text(
-              'Emergency SOS',
-              style: TextStyle(color: scheme.onSurface),
+            
+            // Chevron icon
+            Icon(
+              Icons.keyboard_arrow_down,
+              color: scheme.onSurface.withOpacity(0.5),
+              size: 20,
             ),
           ],
         ),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Choose an emergency action below.\n"
-                "This feature will automatically share your location and vehicle details when enabled.",
-                style: TextStyle(
-                  fontSize: 13,
-                  color: scheme.onSurface.withOpacity(0.8),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // ================= AUTO INFO =================
-              Text(
-                "Information to be shared",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: scheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 6),
-
-              _infoRow(Icons.location_on, "Current Location"),
-              _infoRow(Icons.directions_car, "Selected Vehicle"),
-              _infoRow(Icons.access_time, "Time & Date"),
-
-              const SizedBox(height: 16),
-
-              // ================= CALL OPTIONS =================
-              Text(
-                "Emergency Call Options",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: scheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 10),
-
-              _sosButton(
-                icon: Icons.build,
-                label: "Call Nearest Mechanic",
-                background: scheme.tertiaryContainer,
-                foreground: scheme.onTertiaryContainer,
-                onTap: () {
-                  Navigator.pop(context);
-                  SnackBarHelper.showInfo(
-                    context,
-                    "Calling nearest mechanic (feature coming soon)",
-                  );
-                },
-              ),
-
-              _sosButton(
-                icon: Icons.contact_phone,
-                label: "Call Emergency Contact",
-                background: scheme.secondaryContainer,
-                foreground: scheme.onSecondaryContainer,
-                onTap: () {
-                  Navigator.pop(context);
-                  SnackBarHelper.showInfo(
-                    context,
-                    "Calling emergency contact (feature coming soon)",
-                  );
-                },
-              ),
-
-              _sosButton(
-                icon: Icons.support_agent,
-                label: "Call Support",
-                background: scheme.primaryContainer,
-                foreground: scheme.onPrimaryContainer,
-                onTap: () {
-                  Navigator.pop(context);
-                  SnackBarHelper.showInfo(
-                    context,
-                    "Calling support (feature coming soon)",
-                  );
-                },
-              ),
-
-              const SizedBox(height: 10),
-
-              Text(
-                "⚠ Use SOS only in real emergency situations.",
-                style: TextStyle(
-                  color: scheme.error,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Close"),
-          ),
-        ],
       ),
     );
   }
 
+  Future<void> _handleLogout() async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(l10n.logout),
+        content: Text(l10n.logoutConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              l10n.logout,
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _auth.logout();
+      if (!mounted) return;
+      Navigator.pushNamedAndRemoveUntil(
+          context, '/login', (r) => false);
+    }
+  }
+
+  // ═══════════════════════════════════════════
+  // FLOATING SOS BUTTON BUILDER
+  // ═══════════════════════════════════════════
+
+  Widget _buildFloatingSOSButton() {
+    final l10n = AppLocalizations.of(context)!;
+    return FloatingActionButton.extended(
+      onPressed: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const SOSScreen()),
+      ),
+      backgroundColor: Colors.red,
+      foregroundColor: Colors.white,
+      icon: const Icon(Icons.emergency, size: 24),
+      label: Text(
+        l10n.sos,
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 16,
+        ),
+      ),
+      elevation: 8,
+      heroTag: 'sos_button',
+    );
+  }
+
+  // ═══════════════════════════════════════════
+  // BUILD SCREENS PER TAB
+  // ═══════════════════════════════════════════
+
+  Widget _buildBody() {
+    switch (_currentIndex) {
+      case 0:
+        return _buildMechanicsList();
+      case 1:
+        return const MyRequestsScreen(showAppBar: false);
+      case 3:
+        return MyVehiclesScreen(
+          showAppBar: false,
+          key: ValueKey('vehicles_$_showVehicleAddForm'),
+          showAddForm: _showVehicleAddForm,
+          onAddFormClosed: () {
+            setState(() {
+              _showVehicleAddForm = false;
+            });
+          },
+        );
+      default:
+        return _buildMechanicsList();
+    }
+  }
+
+  String _getTitle() {
+    final l10n = AppLocalizations.of(context)!;
+    switch (_currentIndex) {
+      case 0:
+        return l10n.mechanicsNearby;
+      case 1:
+        return l10n.myRequests;
+      case 3:
+        return l10n.myVehicles;
+      default:
+        return 'MechResQ';
+    }
+  }
+
   Widget _buildMechanicsList() {
     final scheme = Theme.of(context).colorScheme;
+
+    return Stack(
+      children: [
+        // Full-screen map in background
+        _buildMapView(),
+
+        // Draggable bottom sheet with mechanics list
+        DraggableScrollableSheet(
+          initialChildSize: 0.4, // Start at 40% of screen
+          minChildSize: 0.15, // Can collapse to 15% (showing just handle and location chip)
+          maxChildSize: 0.85, // Can expand to 85%
+          snap: true,
+          snapSizes: const [0.15, 0.4, 0.85], // Snap to these positions
+          builder: (context, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: scheme.surface,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(20),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  // Drag handle - make this area draggable
+                  GestureDetector(
+                    onVerticalDragUpdate: (_) {}, // Allows dragging
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: scheme.onSurface.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Content
+                  Expanded(
+                    child: ListView(
+                      controller: scrollController,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      children: [
+                        // Location chip
+                        _buildLocationChip(scheme),
+                        const SizedBox(height: 12),
+
+                        // Search bar
+                        TextField(
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                            hintText: AppLocalizations.of(context)!.searchHint,
+                            prefixIcon: const Icon(Icons.search),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            suffixIcon: _searchController.text.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      FocusScope.of(context).unfocus();
+                                      setState(() {});
+                                    },
+                                  )
+                                : null,
+                          ),
+                          onChanged: (_) => setState(() {}),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Mechanics list
+                        _buildMechanicsStreamList(scheme),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  /// Build map view showing current location and nearby mechanics
+  Widget _buildMapView() {
+    return FutureBuilder<LatLng?>(
+      future: _getCurrentPosition(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Container(
+            color: Colors.grey.shade200,
+            child: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        final currentPosition = snapshot.data!;
+
+        return GoogleMap(
+          initialCameraPosition: CameraPosition(
+            target: currentPosition,
+            zoom: 14,
+          ),
+          myLocationEnabled: true,
+          myLocationButtonEnabled: true,
+          zoomControlsEnabled: true, // Enable zoom controls
+          zoomGesturesEnabled: true, // Enable pinch to zoom
+          scrollGesturesEnabled: true, // Enable pan gestures
+          rotateGesturesEnabled: true, // Enable rotation
+          tiltGesturesEnabled: true, // Enable tilt
+          mapToolbarEnabled: false,
+          padding: const EdgeInsets.only(bottom: 100), // Padding for bottom sheet
+          markers: {
+            // Current location marker is handled by myLocationEnabled
+          },
+          onMapCreated: (controller) {
+            // Map created
+          },
+        );
+      },
+    );
+  }
+
+  /// Get current GPS position
+  Future<LatLng?> _getCurrentPosition() async {
+    try {
+      final position = await _locationService.getCurrentLocation();
+      if (position == null) return null;
+      return LatLng(position.latitude, position.longitude);
+    } catch (e) {
+      print('Error getting position: $e');
+      // Default to a fallback location
+      return const LatLng(37.7749, -122.4194); // San Francisco
+    }
+  }
+
+  /// Build mechanics stream list (extracted for reuse)
+  Widget _buildMechanicsStreamList(ColorScheme scheme) {
+    final l10n = AppLocalizations.of(context)!;
     
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: _mechanicService.getVerifiedMechanicsStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: CircularProgressIndicator(color: scheme.primary),
+            ),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.error_outline, size: 48, color: scheme.error),
+                  const SizedBox(height: 12),
+                  Text(l10n.somethingWentWrong, style: TextStyle(color: scheme.onSurface)),
+                  const SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed: () => setState(() {}),
+                    child: Text(l10n.retry),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.build_circle_outlined, size: 64, color: scheme.primary.withOpacity(0.4)),
+                  const SizedBox(height: 16),
+                  Text(
+                    l10n.noMechanicsNearby,
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: scheme.onSurface),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.mechanicsWillAppear,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 14, color: scheme.onSurface.withOpacity(0.5)),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () => setState(() {}),
+                    icon: const Icon(Icons.refresh),
+                    label: Text(l10n.refresh),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final allMechanics = snapshot.data!;
+        final filteredMechanics = _filterMechanics(allMechanics);
+
+        if (filteredMechanics.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Text(
+                l10n.noMatchingMechanics,
+                style: TextStyle(color: scheme.onSurface),
+              ),
+            ),
+          );
+        }
+
+        return Column(
+          children: filteredMechanics.map((mechanic) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: _buildMechanicTile(mechanic),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+
+  Widget _buildOldMechanicsList() {
+    final scheme = Theme.of(context).colorScheme;
+
     return Padding(
       key: const ValueKey('mechanics'),
       padding: const EdgeInsets.all(12.0),
       child: Column(
         children: [
-          // search
+          // Location Chip (Rapido-style)
+          _buildLocationChip(scheme),
+          const SizedBox(height: 12),
+          
           TextField(
             controller: _searchController,
             decoration: InputDecoration(
               hintText:
-                  'Search by name, shop or vehicle type (e.g., Car, Bike)',
+                  'Search by name, shop or vehicle type...',
               prefixIcon: const Icon(Icons.search),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
               ),
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
@@ -363,59 +812,117 @@ class _MechanicListScreenState extends State<MechanicListScreen> {
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: 12),
-
-          // list with StreamBuilder
           Expanded(
             child: StreamBuilder<List<Map<String, dynamic>>>(
-              stream: _mechanicService.getVerifiedMechanicsStream(),
+              stream:
+                  _mechanicService.getVerifiedMechanicsStream(),
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+                if (snapshot.connectionState ==
+                    ConnectionState.waiting) {
                   return Center(
                     child: CircularProgressIndicator(
-                      color: scheme.primary,
-                    ),
+                        color: scheme.primary),
                   );
                 }
 
                 if (snapshot.hasError) {
                   return Center(
-                    child: Text(
-                      'Error: ${snapshot.error}',
-                      style: TextStyle(color: scheme.error),
+                    child: Column(
+                      mainAxisAlignment:
+                          MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error_outline,
+                            size: 60,
+                            color: scheme.error
+                                .withOpacity(0.5)),
+                        const SizedBox(height: 12),
+                        Text('Something went wrong',
+                            style: TextStyle(
+                                color: scheme.onSurface)),
+                        const SizedBox(height: 8),
+                        ElevatedButton(
+                          onPressed: () => setState(() {}),
+                          child: const Text('Retry'),
+                        ),
+                      ],
                     ),
                   );
                 }
 
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                if (!snapshot.hasData ||
+                    snapshot.data!.isEmpty) {
                   return Center(
-                    child: Text(
-                      'No verified mechanics available.',
-                      style: TextStyle(color: scheme.onSurface),
+                    child: Column(
+                      mainAxisAlignment:
+                          MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.build_circle_outlined,
+                          size: 80,
+                          color:
+                              scheme.primary.withOpacity(0.4),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No mechanics nearby',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: scheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Mechanics will appear here\nonce they come online',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: scheme.onSurface
+                                .withOpacity(0.5),
+                            height: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton.icon(
+                          onPressed: () => setState(() {}),
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Refresh'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: scheme.primary,
+                            foregroundColor: scheme.onPrimary,
+                          ),
+                        ),
+                      ],
                     ),
                   );
                 }
 
                 final allMechanics = snapshot.data!;
-                final filteredMechanics = _filterMechanics(allMechanics);
+                final filteredMechanics =
+                    _filterMechanics(allMechanics);
 
                 if (filteredMechanics.isEmpty) {
                   return Center(
                     child: Text(
-                      'No mechanics found.',
-                      style: TextStyle(color: scheme.onSurface),
+                      'No mechanics match your search.',
+                      style:
+                          TextStyle(color: scheme.onSurface),
                     ),
                   );
                 }
 
                 return RefreshIndicator(
                   onRefresh: () async {
-                    await Future.delayed(const Duration(milliseconds: 300));
+                    await Future.delayed(
+                        const Duration(milliseconds: 300));
                   },
                   child: ListView.separated(
                     itemCount: filteredMechanics.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    separatorBuilder: (_, __) =>
+                        const SizedBox(height: 8),
                     itemBuilder: (_, i) =>
-                        _buildMechanicTile(filteredMechanics[i]),
+                        _buildMechanicTile(
+                            filteredMechanics[i]),
                   ),
                 );
               },
@@ -429,349 +936,401 @@ class _MechanicListScreenState extends State<MechanicListScreen> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    
-    final title = {
-      SelectedSection.mechanics: 'Mechanics Nearby',
-      SelectedSection.vehicles: 'My Vehicles',
-      SelectedSection.help: 'Help & Support',
-    }[_selected]!;
+    final l10n = AppLocalizations.of(context)!;
 
-    // derive display name & email safely
-    final displayName =
-        (_profile != null && (_profile!['name'] ?? '').toString().isNotEmpty)
-            ? _profile!['name'].toString()
-            : 'Your Name';
-    final displayEmail = (_profile != null &&
-            (_profile!['email'] ?? '').toString().isNotEmpty)
-        ? _profile!['email'].toString()
-        : 'user@example.com';
+    final displayName = (_profile != null &&
+            (_profile!['name'] ?? '').toString().isNotEmpty)
+        ? _profile!['name'].toString()
+        : 'You';
 
-    final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
+    final displayPhone = (_profile != null &&
+            (_profile!['phone'] ?? '').toString().isNotEmpty)
+        ? _profile!['phone'].toString()
+        : (_profile != null &&
+                (_profile!['email'] ?? '')
+                    .toString()
+                    .isNotEmpty)
+            ? _profile!['email'].toString()
+            : '';
+
+    final initial = displayName.isNotEmpty
+        ? displayName[0].toUpperCase()
+        : 'U';
+
+    // If showing vehicle add form, render body without AppBar/BottomNav
+    if (_currentIndex == 3 && _showVehicleAddForm) {
+      return Scaffold(
+        body: _buildBody(),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(title),
+        title: Text(_getTitle()),
         leading: Builder(
           builder: (ctx) => IconButton(
             icon: CircleAvatar(
               radius: 16,
-              backgroundColor: scheme.secondary,
+              backgroundColor: scheme.primary,
               child: Text(
                 initial,
                 style: TextStyle(
-                  color: scheme.onSecondary,
+                  color: scheme.onPrimary,
                   fontWeight: FontWeight.bold,
+                  fontSize: 14,
                 ),
               ),
             ),
             onPressed: () => Scaffold.of(ctx).openDrawer(),
           ),
         ),
-        actions: _selected == SelectedSection.mechanics
+        actions: _currentIndex == 0
             ? [
-                // 🤖 ResQAssist AI Chatbot
-                IconButton(
-                  icon: const Icon(Icons.smart_toy_outlined),
-                  tooltip: "ResQAssist",
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => ResQAssistScreen()),
-                    );
-                  },
-                ),
-
-                // 🔍 Filters
                 Builder(
-                  builder: (innerCtx) {
-                    return IconButton(
-                      icon: const Icon(Icons.filter_alt_outlined),
-                      tooltip: 'Filters',
-                      onPressed: () => Scaffold.of(innerCtx).openEndDrawer(),
-                    );
-                  },
+                  builder: (innerCtx) => IconButton(
+                    icon: const Icon(Icons.filter_alt_outlined),
+                    tooltip: l10n.filters,
+                    onPressed: () =>
+                        Scaffold.of(innerCtx).openEndDrawer(),
+                  ),
                 ),
               ]
-            : null,
+            : _currentIndex == 3
+                ? [
+                    IconButton(
+                      icon: const Icon(Icons.add),
+                      tooltip: 'Add Vehicle',
+                      onPressed: () {
+                        // Trigger add vehicle form
+                        setState(() {
+                          _showVehicleAddForm = true;
+                        });
+                      },
+                    ),
+                  ]
+                : null,
       ),
 
+      // ═══════════════════════════════════════
+      // DRAWER — Simplified
+      // ═══════════════════════════════════════
       drawer: Drawer(
         child: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Header with avatar + name + email
-              Container(
-                color: scheme.primary,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 18,
-                ),
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.pop(context); // close drawer
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => ProfileScreen()),
-                        );
-                      },
-                      child: CircleAvatar(
+              // Header
+              GestureDetector(
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => ProfileScreen()),
+                  );
+                },
+                child: Container(
+                  color: scheme.primary,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 20),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
                         radius: 28,
                         backgroundColor: scheme.onPrimary,
                         child: Text(
                           initial,
                           style: TextStyle(
-                            fontSize: 28,
+                            fontSize: 26,
                             color: scheme.primary,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            displayName,
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: scheme.onPrimary,
-                              fontWeight: FontWeight.w600,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              displayName,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: scheme.onPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            displayEmail,
-                            style: TextStyle(
-                              color: scheme.onPrimary.withOpacity(0.8),
-                            ),
-                          ),
-                        ],
+                            if (displayPhone.isNotEmpty)
+                              const SizedBox(height: 4),
+                            if (displayPhone.isNotEmpty)
+                              Text(
+                                displayPhone,
+                                style: TextStyle(
+                                  color: scheme.onPrimary
+                                      .withOpacity(0.85),
+                                  fontSize: 13,
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                      Icon(Icons.chevron_right,
+                          color:
+                              scheme.onPrimary.withOpacity(0.7)),
+                    ],
+                  ),
                 ),
               ),
 
-              // Home item (shows mechanics list)
-              ListTile(
-                leading: const Icon(Icons.home),
-                title: const Text('Home'),
-                selected: _selected == SelectedSection.mechanics,
-                onTap: () => _selectSection(SelectedSection.mechanics),
-              ),
-
-              // Drawer items
-              ListTile(
-                leading: const Icon(Icons.list_alt),
-                title: const Text('My Requests'),
-                onTap: _openMyRequests,
-              ),
-              ListTile(
-                leading: const Icon(Icons.directions_car),
-                title: const Text('My Vehicles'),
-                selected: _selected == SelectedSection.vehicles,
-                onTap: () => _selectSection(SelectedSection.vehicles),
-              ),
-              ListTile(
-                leading: const Icon(Icons.help_outline),
-                title: const Text('Help'),
-                selected: _selected == SelectedSection.help,
-                onTap: () => _selectSection(SelectedSection.help),
-              ),
-              const Spacer(),
+              const SizedBox(height: 8),
 
               ListTile(
-                leading: const Icon(Icons.settings),
-                title: const Text('Settings'),
+                leading: const Icon(Icons.notifications_outlined),
+                title: Text(l10n.serviceReminders),
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                    MaterialPageRoute(
+                        builder: (_) => const ServiceRemindersScreen()),
                   );
                 },
               ),
 
-              // 🚨 SOS CALL BUTTON
               ListTile(
-                leading: Icon(Icons.sos, color: scheme.error),
+                leading: const Icon(Icons.settings_outlined),
+                title: Text(l10n.settings),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const SettingsScreen()),
+                  );
+                },
+              ),
+
+              ListTile(
+                leading: const Icon(Icons.help_outline),
+                title: Text(l10n.helpSupport),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => HelpScreen()),
+                  );
+                },
+              ),
+
+              ListTile(
+                leading: Icon(Icons.sos_outlined,
+                    color: scheme.error),
                 title: Text(
-                  'SOS Call',
+                  l10n.sosEmergency,
                   style: TextStyle(
                     color: scheme.error,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 onTap: () {
-                  Navigator.pop(context); // close drawer
-                  _showSOSDialog();
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SOSScreen()),
+                  );
                 },
               ),
+
+              const Spacer(),
               const Divider(height: 1),
+
               ListTile(
-                leading: const Icon(Icons.logout),
-                title: const Text('Logout'),
+                leading: const Icon(Icons.logout,
+                    color: Colors.red),
+                title: Text(l10n.logout,
+                    style: const TextStyle(color: Colors.red)),
                 onTap: () async {
                   Navigator.pop(context);
                   await _handleLogout();
                 },
               ),
+              const SizedBox(height: 8),
             ],
           ),
         ),
       ),
 
-      // RIGHT-SIDE SLIDE PANEL (endDrawer) — Filters
-      endDrawer: _selected == SelectedSection.mechanics
+      // ═══════════════════════════════════════
+      // FILTER DRAWER (right side)
+      // ═══════════════════════════════════════
+      endDrawer: _currentIndex == 0
           ? Drawer(
               child: SafeArea(
                 child: Padding(
-                  padding: const EdgeInsets.all(12.0),
+                  padding: const EdgeInsets.all(16.0),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Filters',
-                        style: Theme.of(context).textTheme.titleLarge,
+                      Row(
+                        mainAxisAlignment:
+                            MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(l10n.filters,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge),
+                          TextButton(
+                            onPressed: _resetFilters,
+                            child: Text(l10n.resetAll),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 12),
+                      const Divider(),
 
-                      // Experience
-                      const Text('Experience (years)'),
+                      Text(l10n.experienceYears),
                       const SizedBox(height: 6),
                       DropdownButton<int?>(
                         isExpanded: true,
                         value: _expYears,
-                        hint: const Text('Any'),
-                        items: [null, 1, 2, 3, 4, 5, 6, 7].map((v) {
-                          return DropdownMenuItem<int?>(
-                            value: v,
-                            child: Text(v == null ? 'Any' : '$v+ years'),
-                          );
-                        }).toList(),
-                        onChanged: (v) => setState(() => _expYears = v),
+                        hint: Text(l10n.any),
+                        items: [null, 1, 2, 3, 4, 5, 6, 7]
+                            .map((v) => DropdownMenuItem<int?>(
+                                  value: v,
+                                  child: Text(v == null
+                                      ? l10n.any
+                                      : '$v+ ${l10n.years}'),
+                                ))
+                            .toList(),
+                        onChanged: (v) =>
+                            setState(() => _expYears = v),
                       ),
                       const SizedBox(height: 12),
 
-                      // Vehicle types (chips)
-                      const Text('Vehicle type'),
+                      Text(l10n.vehicleType),
                       const SizedBox(height: 6),
                       StreamBuilder<List<Map<String, dynamic>>>(
-                        stream: _mechanicService.getVerifiedMechanicsStream(),
+                        stream: _mechanicService
+                            .getVerifiedMechanicsStream(),
                         builder: (context, snapshot) {
-                          if (!snapshot.hasData) {
-                            return const SizedBox.shrink();
+                          // Get vehicle types from mechanics or use default list
+                          List<String> vehicleTypes = [];
+                          
+                          if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                            vehicleTypes = _allVehicleTypes(snapshot.data!);
                           }
-                          final vehicleTypes = _allVehicleTypes(snapshot.data!);
+                          
+                          // If no vehicle types from mechanics, use default common types
                           if (vehicleTypes.isEmpty) {
-                            return const Text('No vehicle types available');
+                            vehicleTypes = [
+                              l10n.car,
+                              l10n.bike,
+                              l10n.scooter,
+                              l10n.auto,
+                              l10n.truck,
+                              l10n.suv,
+                              l10n.bus,
+                              l10n.heavyVehicle,
+                            ];
                           }
-                          return SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children: vehicleTypes.map((vt) {
-                                final selected =
-                                    _selectedVehicleTypes.contains(vt);
-                                return Padding(
-                                  padding: const EdgeInsets.only(right: 6.0),
-                                  child: FilterChip(
-                                    label: Text(vt),
-                                    selected: selected,
-                                    onSelected: (s) {
-                                      setState(() {
-                                        if (s) {
-                                          _selectedVehicleTypes.add(vt);
-                                        } else {
-                                          _selectedVehicleTypes.remove(vt);
-                                        }
-                                      });
-                                    },
-                                  ),
-                                );
-                              }).toList(),
-                            ),
+                          
+                          return Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: vehicleTypes.map((vt) {
+                              final selected =
+                                  _selectedVehicleTypes
+                                      .contains(vt);
+                              return FilterChip(
+                                label: Text(vt),
+                                selected: selected,
+                                onSelected: (s) {
+                                  setState(() {
+                                    if (s)
+                                      _selectedVehicleTypes
+                                          .add(vt);
+                                    else
+                                      _selectedVehicleTypes
+                                          .remove(vt);
+                                  });
+                                },
+                              );
+                            }).toList(),
                           );
                         },
                       ),
                       const SizedBox(height: 12),
 
-                      // Price ranges
-                      const Text('Price range'),
+                      Text(l10n.priceRange),
                       const SizedBox(height: 6),
                       DropdownButton<String?>(
                         isExpanded: true,
                         value: _priceRange,
-                        hint: const Text('Any'),
+                        hint: Text(l10n.any),
                         items: <String?>[
                           null,
                           '100-200',
                           '150-250',
                           '200-300',
-                          '300-500',
+                          '300-500'
                         ]
-                            .map(
-                              (p) => DropdownMenuItem<String?>(
-                                value: p,
-                                child: Text(p ?? 'Any'),
-                              ),
-                            )
+                            .map((p) =>
+                                DropdownMenuItem<String?>(
+                                  value: p,
+                                  child: Text(p ?? l10n.any),
+                                ))
                             .toList(),
-                        onChanged: (v) => setState(() => _priceRange = v),
+                        onChanged: (v) =>
+                            setState(() => _priceRange = v),
                       ),
                       const SizedBox(height: 12),
 
-                      // Distance
-                      const Text('Max distance (km)'),
+                      Text(l10n.maxDistance),
                       const SizedBox(height: 6),
                       DropdownButton<double?>(
                         isExpanded: true,
                         value: _maxDistanceKm,
-                        hint: const Text('Any'),
-                        items: <double?>[null, 2.0, 5.0, 10.0].map((d) {
-                          return DropdownMenuItem<double?>(
-                            value: d,
-                            child: Text(d == null ? 'Any' : '≤ ${d.toString()} km'),
-                          );
-                        }).toList(),
-                        onChanged: (v) => setState(() => _maxDistanceKm = v),
+                        hint: Text(l10n.any),
+                        items: <double?>[
+                          null,
+                          2.0,
+                          5.0,
+                          10.0
+                        ]
+                            .map((d) =>
+                                DropdownMenuItem<double?>(
+                                  value: d,
+                                  child: Text(d == null
+                                      ? l10n.any
+                                      : '≤ ${d}${l10n.km}'),
+                                ))
+                            .toList(),
+                        onChanged: (v) =>
+                            setState(() => _maxDistanceKm = v),
                       ),
                       const SizedBox(height: 12),
 
-                      // Rating
-                      const Text('Minimum rating'),
+                      Text(l10n.minimumRating),
                       Slider(
                         min: 0,
                         max: 5,
                         divisions: 5,
                         value: _minRating ?? 0,
                         label: (_minRating ?? 0).toString(),
-                        onChanged: (val) =>
-                            setState(() => _minRating = val == 0 ? null : val),
+                        onChanged: (val) => setState(() =>
+                            _minRating = val == 0 ? null : val),
                       ),
 
                       const Spacer(),
 
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: _resetFilters,
-                              child: const Text('Reset'),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: _applyFilters,
-                              child: const Text('Apply'),
-                            ),
-                          ),
-                        ],
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _applyFilters,
+                          child: Text(l10n.applyFilters),
+                        ),
                       ),
                       const SizedBox(height: 12),
                     ],
@@ -782,66 +1341,73 @@ class _MechanicListScreenState extends State<MechanicListScreen> {
           : null,
 
       body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 250),
-        child: _buildSelectedContent(),
+        duration: const Duration(milliseconds: 200),
+        child: _buildBody(),
       ),
 
-      floatingActionButton: _selected == SelectedSection.mechanics
-          ? FloatingActionButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/create_request');
-              },
-              backgroundColor: scheme.primary,
-              child: Icon(Icons.add, color: scheme.onPrimary),
-            )
-          : null,
-    );
-  }
+      // ═══════════════════════════════════════
+      // FLOATING SOS BUTTON (Only on Home screen)
+      // ═══════════════════════════════════════
+      floatingActionButton: _currentIndex == 0 ? _buildFloatingSOSButton() : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
 
-  // ================= SOS HELPERS =================
-
-  Widget _infoRow(IconData icon, String text) {
-    final scheme = Theme.of(context).colorScheme;
-    
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            size: 18,
-            color: scheme.onSurface.withOpacity(0.7),
+      // ═══════════════════════════════════════
+      // BOTTOM NAV
+      // ═══════════════════════════════════════
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex > 2 ? _currentIndex : _currentIndex,
+        onTap: (index) {
+          if (index == 2) {
+            // Request Help tab - navigate to create request
+            Navigator.pushNamed(context, '/create_request');
+          } else {
+            setState(() => _currentIndex = index);
+          }
+        },
+        backgroundColor: scheme.surface,
+        selectedItemColor: scheme.primary,
+        unselectedItemColor: scheme.onSurface.withOpacity(0.5),
+        type: BottomNavigationBarType.fixed,
+        elevation: 8,
+        items: [
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.home_outlined),
+            activeIcon: const Icon(Icons.home),
+            label: l10n.home,
           ),
-          const SizedBox(width: 8),
-          Text(
-            text,
-            style: TextStyle(
-              color: scheme.onSurface.withOpacity(0.8),
-            ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.list_alt_outlined),
+            activeIcon: const Icon(Icons.list_alt),
+            label: l10n.myRequests,
+          ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.add_circle_outline),
+            activeIcon: const Icon(Icons.add_circle),
+            label: l10n.requestHelp,
+          ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.directions_car_outlined),
+            activeIcon: const Icon(Icons.directions_car),
+            label: l10n.myVehicles,
           ),
         ],
       ),
     );
   }
 
-  Widget _sosButton({
-    required IconData icon,
-    required String label,
-    required Color background,
-    required Color foreground,
-    required VoidCallback onTap,
-  }) {
+  Widget _infoRow(IconData icon, String text) {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: ElevatedButton.icon(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: background,
-          foregroundColor: foreground,
-          minimumSize: const Size(double.infinity, 46),
-        ),
-        icon: Icon(icon),
-        label: Text(label),
-        onPressed: onTap,
+      child: Row(
+        children: [
+          Icon(icon, size: 18,
+              color: scheme.onSurface.withOpacity(0.7)),
+          const SizedBox(width: 8),
+          Text(text,
+              style: TextStyle(
+                  color: scheme.onSurface.withOpacity(0.8))),
+        ],
       ),
     );
   }
