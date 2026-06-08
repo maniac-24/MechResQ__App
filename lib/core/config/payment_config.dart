@@ -13,10 +13,8 @@ class PaymentConfig {
   /// Get production key from: https://dashboard.razorpay.com/app/keys
   static const String razorpayKeyId = 'rzp_test_SypZde9zVDIpoJ';
   
-  /// Razorpay Test Key Secret (Keep this secure, never expose in client)
-  /// Only use on secure backend/server
-  /// This is included here for reference only - DO NOT use in production client code
-  static const String razorpayKeySecret = '7rmPAnRxqMzvjHprbHqW6cz7';
+  // Key secret must only be used server-side. Never include in client code.
+  // static const String razorpayKeySecret = 'YOUR_SECRET_HERE';
 
   // ═══════════════════════════════════════════
   // PAYMENT SETTINGS

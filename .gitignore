@@ -45,3 +45,7 @@ app.*.map.json
 /android/app/release
 android/build/
 .gradle/
+
+# Sensitive config files - do not commit to public repos
+# android/app/google-services.json
+# ios/Runner/GoogleService-Info.plist
