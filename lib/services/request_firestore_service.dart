@@ -13,6 +13,8 @@ class RequestFirestoreService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   String? get _currentUserId => _auth.currentUser?.uid;
+  // Public getter for screens that need the current user ID
+  String? get currentUserId => _auth.currentUser?.uid;
 
   // =========================================================
   // CREATE REQUEST
@@ -117,6 +119,38 @@ class RequestFirestoreService {
       'status': 'cancelled',
       'updatedAt': FieldValue.serverTimestamp(),
     });
+  }
+
+  // =========================================================
+  // DELETE REQUEST
+  // =========================================================
+
+  /// Delete a request from history
+  /// Used by: MyRequestsScreen (bulk delete)
+  Future<void> deleteRequest(String requestId) async {
+    final userId = _currentUserId;
+    if (userId == null) throw Exception('User not logged in');
+
+    // Verify the request belongs to the current user
+    final doc = await _db.collection('requests').doc(requestId).get();
+    if (!doc.exists) throw Exception('Request not found');
+    
+    final data = doc.data();
+    if (data?['userId'] != userId) {
+      throw Exception('Unauthorized: This request does not belong to you');
+    }
+
+    // Only allow deletion of cancelled or completed requests
+    final status = data?['status'];
+    if (status != 'cancelled' && status != 'completed') {
+      throw Exception('Can only delete cancelled or completed requests');
+    }
+
+    // Delete the request document
+    await _db.collection('requests').doc(requestId).delete();
+    
+    // Note: Consider also deleting related data (requestTracking, payments, etc.)
+    // For now, we only delete the main request document
   }
 
   // =========================================================

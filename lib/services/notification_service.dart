@@ -4,6 +4,8 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'dart:io';
 
+import '../utils/notification_navigation_helper.dart';
+
 /// Notification Service
 /// Handles local notifications and Firebase Cloud Messaging
 class NotificationService {
@@ -126,7 +128,9 @@ class NotificationService {
   // Handle notification tap
   void _onNotificationTapped(NotificationResponse response) {
     print('📲 Notification tapped: ${response.payload}');
-    // TODO: Navigate to appropriate screen based on payload
+    
+    // Navigate to appropriate screen based on payload
+    NotificationNavigationHelper.handleNotificationNavigation(response.payload);
   }
 
   // ═══════════════════════════════════════════
@@ -169,7 +173,20 @@ class NotificationService {
 
   void _handleNotificationOpen(RemoteMessage message) {
     print('📲 Notification opened: ${message.notification?.title}');
-    // TODO: Navigate based on message data
+    
+    // Extract data from Firebase message and create payload string
+    final data = message.data;
+    if (data.isNotEmpty) {
+      // Convert data map to payload string format
+      final payload = data.entries
+          .map((e) => '${e.key}:${e.value}')
+          .join(',');
+      
+      print('📲 Navigation payload: $payload');
+      NotificationNavigationHelper.handleNotificationNavigation(payload);
+    } else {
+      print('⚠️ No data in notification message');
+    }
   }
 
   // ═══════════════════════════════════════════
@@ -209,6 +226,106 @@ class NotificationService {
       body,
       details,
       payload: payload,
+    );
+  }
+
+  // ═══════════════════════════════════════════
+  // CONVENIENCE METHODS FOR SPECIFIC NOTIFICATIONS
+  // ═══════════════════════════════════════════
+
+  /// Notification when request is updated
+  Future<void> showRequestUpdateNotification({
+    required String requestId,
+    required String title,
+    required String body,
+  }) async {
+    await showInstantNotification(
+      title: title,
+      body: body,
+      payload: 'type:request_update,requestId:$requestId',
+    );
+  }
+
+  /// Notification when mechanic is assigned
+  Future<void> showMechanicAssignedNotification({
+    required String requestId,
+    required String mechanicName,
+  }) async {
+    await showInstantNotification(
+      title: 'Mechanic Assigned',
+      body: '$mechanicName has been assigned to your request',
+      payload: 'type:request_assigned,requestId:$requestId',
+    );
+  }
+
+  /// Notification when mechanic arrives
+  Future<void> showMechanicArrivedNotification({
+    required String requestId,
+    required String mechanicName,
+  }) async {
+    await showInstantNotification(
+      title: 'Mechanic Arrived',
+      body: '$mechanicName has arrived at your location',
+      payload: 'type:mechanic_arrived,requestId:$requestId',
+    );
+  }
+
+  /// Notification when request is completed
+  Future<void> showRequestCompletedNotification({
+    required String requestId,
+  }) async {
+    await showInstantNotification(
+      title: 'Service Completed',
+      body: 'Your service request has been completed',
+      payload: 'type:request_completed,requestId:$requestId',
+    );
+  }
+
+  /// Notification for new chat message
+  Future<void> showNewMessageNotification({
+    required String requestId,
+    required String mechanicId,
+    required String mechanicName,
+    required String message,
+  }) async {
+    await showInstantNotification(
+      title: 'New message from $mechanicName',
+      body: message,
+      payload: 'type:new_message,requestId:$requestId,mechanicId:$mechanicId,mechanicName:$mechanicName',
+    );
+  }
+
+  /// Notification for SOS alert
+  Future<void> showSOSAlertNotification() async {
+    await showInstantNotification(
+      title: 'SOS Alert Sent',
+      body: 'Your emergency contacts have been notified',
+      payload: 'type:sos_alert',
+    );
+  }
+
+  /// Notification for service reminder
+  Future<void> showServiceReminderNotification({
+    required String vehicleName,
+    required String serviceType,
+  }) async {
+    await showInstantNotification(
+      title: 'Service Reminder',
+      body: '$serviceType due for $vehicleName',
+      payload: 'type:service_reminder',
+    );
+  }
+
+  /// Notification to request review
+  Future<void> showReviewRequestNotification({
+    required String requestId,
+    required String mechanicId,
+    required String mechanicName,
+  }) async {
+    await showInstantNotification(
+      title: 'Rate Your Experience',
+      body: 'How was your service with $mechanicName?',
+      payload: 'type:review_request,requestId:$requestId,mechanicId:$mechanicId,mechanicName:$mechanicName',
     );
   }
 

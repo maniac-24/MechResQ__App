@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -59,7 +59,6 @@ class _RequestTrackingScreenState extends State<RequestTrackingScreen> {
     _updateTimer = Timer.periodic(const Duration(seconds: 15), (_) {
       if (_currentTracking?.canTrack == true) {
         // The stream will automatically fetch updated data
-        debugPrint('📍 Checking for mechanic location updates...');
       }
     });
   }
@@ -262,7 +261,7 @@ class _RequestTrackingScreenState extends State<RequestTrackingScreen> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.15),
+            color: Colors.black.withValues(alpha: 0.15),
             blurRadius: 15,
             offset: const Offset(0, -3),
           ),
@@ -276,7 +275,7 @@ class _RequestTrackingScreenState extends State<RequestTrackingScreen> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: scheme.onSurface.withOpacity(0.3),
+              color: scheme.onSurface.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -315,6 +314,10 @@ class _RequestTrackingScreenState extends State<RequestTrackingScreen> {
                   ),
                   const SizedBox(height: 12),
                   _buildTimeline(tracking),
+                  
+                  // Payment button based on status
+                  const SizedBox(height: 20),
+                  _buildPaymentButton(tracking),
                 ],
               ),
             ),
@@ -324,60 +327,8 @@ class _RequestTrackingScreenState extends State<RequestTrackingScreen> {
     );
   }
 
-  Widget _buildInfoSection() {
-    final scheme = Theme.of(context).colorScheme;
-    final tracking = _currentTracking!;
-    final l10n = AppLocalizations.of(context)!;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Status badge
-            _buildStatusBadge(tracking),
-            const SizedBox(height: 16),
-
-            // Mechanic info (if assigned)
-            if (tracking.isMechanicAssigned) ...[
-              _buildMechanicInfo(tracking),
-              const SizedBox(height: 16),
-            ],
-
-            // ETA & Distance info
-            if (tracking.canTrack) ...[
-              _buildETAInfo(tracking),
-              const SizedBox(height: 16),
-            ],
-
-            // Timeline
-            Text(
-              l10n.statusTimeline,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            _buildTimeline(tracking),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildStatusBadge(RequestTracking tracking) {
+    final l10n = AppLocalizations.of(context)!;
     Color statusColor;
     IconData statusIcon;
 
@@ -419,7 +370,7 @@ class _RequestTrackingScreenState extends State<RequestTrackingScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.1),
+        color: statusColor.withValues(alpha: 0.1),
         border: Border.all(color: statusColor),
         borderRadius: BorderRadius.circular(12),
       ),
@@ -429,7 +380,7 @@ class _RequestTrackingScreenState extends State<RequestTrackingScreen> {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              tracking.statusDisplay,
+              _localizeStatus(tracking.status, l10n),
               style: TextStyle(
                 color: statusColor,
                 fontSize: 18,
@@ -440,6 +391,27 @@ class _RequestTrackingScreenState extends State<RequestTrackingScreen> {
         ],
       ),
     );
+  }
+
+  String _localizeStatus(RequestStatus status, AppLocalizations l10n) {
+    switch (status) {
+      case RequestStatus.pending:
+        return l10n.pending;
+      case RequestStatus.accepted:
+        return l10n.accepted;
+      case RequestStatus.mechanicEnRoute:
+        return l10n.mechanicEnRoute;
+      case RequestStatus.mechanicNearby:
+        return l10n.mechanicNearby;
+      case RequestStatus.mechanicArrived:
+        return l10n.mechanicArrived;
+      case RequestStatus.workInProgress:
+        return l10n.workInProgress;
+      case RequestStatus.completed:
+        return l10n.completed;
+      case RequestStatus.cancelled:
+        return l10n.cancelled;
+    }
   }
 
   Widget _buildMechanicInfo(RequestTracking tracking) {
@@ -479,7 +451,7 @@ class _RequestTrackingScreenState extends State<RequestTrackingScreen> {
                     tracking.mechanicPhone!,
                     style: TextStyle(
                       fontSize: 14,
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                   ),
                 if (tracking.mechanicVehicleNumber != null)
@@ -487,7 +459,7 @@ class _RequestTrackingScreenState extends State<RequestTrackingScreen> {
                     '${l10n.vehicleLabel}: ${tracking.mechanicVehicleNumber}',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
               ],
@@ -538,8 +510,8 @@ class _RequestTrackingScreenState extends State<RequestTrackingScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        border: Border.all(color: color.withOpacity(0.3)),
+        color: color.withValues(alpha: 0.1),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -550,7 +522,7 @@ class _RequestTrackingScreenState extends State<RequestTrackingScreen> {
             label,
             style: TextStyle(
               fontSize: 12,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
           const SizedBox(height: 2),
@@ -650,7 +622,7 @@ class _RequestTrackingScreenState extends State<RequestTrackingScreen> {
     required bool isLast,
   }) {
     final scheme = Theme.of(context).colorScheme;
-    final color = completed ? scheme.primary : scheme.onSurface.withOpacity(0.3);
+    final color = completed ? scheme.primary : scheme.onSurface.withValues(alpha: 0.3);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -698,7 +670,7 @@ class _RequestTrackingScreenState extends State<RequestTrackingScreen> {
                     fontWeight: completed ? FontWeight.w600 : FontWeight.normal,
                     color: completed
                         ? scheme.onSurface
-                        : scheme.onSurface.withOpacity(0.5),
+                        : scheme.onSurface.withValues(alpha: 0.5),
                   ),
                 ),
                 if (time != null)
@@ -706,7 +678,7 @@ class _RequestTrackingScreenState extends State<RequestTrackingScreen> {
                     _formatTime(time),
                     style: TextStyle(
                       fontSize: 12,
-                      color: scheme.onSurface.withOpacity(0.6),
+                      color: scheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
               ],
@@ -735,5 +707,11 @@ class _RequestTrackingScreenState extends State<RequestTrackingScreen> {
     } else {
       return '${time.day}/${time.month}/${time.year} ${time.hour}:${time.minute.toString().padLeft(2, '0')}';
     }
+  }
+
+  // Payment button based on request status - REMOVED
+  // Payment is now handled via Bill Screen after request creation
+  Widget _buildPaymentButton(RequestTracking tracking) {
+    return const SizedBox.shrink();
   }
 }

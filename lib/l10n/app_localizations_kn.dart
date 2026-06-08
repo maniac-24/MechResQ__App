@@ -2835,4 +2835,346 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String get generalVehicleRepairServices => 'ಸಾಮಾನ್ಯ ವಾಹನ ದುರಸ್ತಿ ಸೇವೆಗಳು.';
+
+  @override
+  String get billServiceEstimate => 'ಸೇವಾ ಅಂದಾಜು';
+
+  @override
+  String get billServiceBillPayment => 'ಸೇವಾ ಬಿಲ್ ಮತ್ತು ಪಾವತಿ';
+
+  @override
+  String get billEstimateLabel => 'ಅಂದಾಜು';
+
+  @override
+  String get billBillLabel => 'ಬಿಲ್';
+
+  @override
+  String get billRequestDetails => 'ವಿನಂತಿ ವಿವರಗಳು';
+
+  @override
+  String get billVehicle => 'ವಾಹನ';
+
+  @override
+  String get billIssue => 'ಸಮಸ್ಯೆ';
+
+  @override
+  String get billLocation => 'ಸ್ಥಳ';
+
+  @override
+  String get billDistance => 'ದೂರ';
+
+  @override
+  String get billComplexityPrefix => 'ಸಂಕೀರ್ಣತೆ: ';
+
+  @override
+  String get billDetected => 'ಪತ್ತೆಯಾಗಿದೆ: ';
+
+  @override
+  String get billPriceBreakdown => 'ಬೆಲೆ ವಿವರ';
+
+  @override
+  String get billBaseServiceCharge => 'ಮೂಲ ಸೇವಾ ಶುಲ್ಕ';
+
+  @override
+  String get billLabourCharges => 'ಕಾರ್ಮಿಕ ಶುಲ್ಕ';
+
+  @override
+  String get billCallOutFee => 'ಕಾಲ್-ಔಟ್ / ಪ್ರಯಾಣ ಶುಲ್ಕ';
+
+  @override
+  String get billSpareParts => 'ಬಿಡಿ ಭಾಗಗಳು (ಅಂದಾಜು)';
+
+  @override
+  String get billSparePartsNote => 'ಸೇವೆಯ ನಂತರ ನಿಜವಾದ ವೆಚ್ಚ ಸರಿಹೊಂದಿಸಲಾಗುತ್ತದೆ';
+
+  @override
+  String get billPlatformFee => 'ಪ್ಲಾಟ್‌ಫಾರ್ಮ್ ಶುಲ್ಕ';
+
+  @override
+  String get billPlatformFeeNote => 'ಮೆಕ್‌ರೆಸ್ಕ್ಯೂ ಸೇವಾ ಶುಲ್ಕ';
+
+  @override
+  String get billSubTotal => 'ಉಪ-ಒಟ್ಟು';
+
+  @override
+  String get billGst => 'ಜಿಎಸ್‌ಟಿ (18%)';
+
+  @override
+  String get billGstNote => 'ಸರಕು ಮತ್ತು ಸೇವಾ ತೆರಿಗೆ';
+
+  @override
+  String get billTotalAmount => 'ಒಟ್ಟು ಮೊತ್ತ';
+
+  @override
+  String get billEstimateNote =>
+      'ಇದು ಒಂದು ಅಂದಾಜು. ಬಳಸಿದ ನಿಜವಾದ ಬಿಡಿ ಭಾಗಗಳ ಆಧಾರದ ಮೇಲೆ ಅಂತಿಮ ಮೊತ್ತ ಬದಲಾಗಬಹುದು. GST @ 18% ಸೇರಿದೆ.';
+
+  @override
+  String get billEstimatedTotal => 'ಅಂದಾಜು ಒಟ್ಟು';
+
+  @override
+  String get billEstimateInfoTitle => 'ಇದು ಒಂದು ಅಂದಾಜಿನ ವೆಚ್ಚ';
+
+  @override
+  String get billEstimateInfoBody =>
+      'ಸೇವೆಯ ನಂತರ ಮೆಕ್ಯಾನಿಕ್‌ನಿಂದ ಅಂತಿಮ ಮೊತ್ತ ದೃಢೀಕರಿಸಲಾಗುತ್ತದೆ. ಸೇವೆ ಪೂರ್ಣಗೊಂಡ ನಂತರ ಮಾತ್ರ ಪಾವತಿಸುತ್ತೀರಿ.';
+
+  @override
+  String get billTrackingInfo =>
+      'ಮೆಕ್ಯಾನಿಕ್ ಒಪ್ಪಿದ ನಂತರ, ನನ್ನ ವಿನಂತಿಗಳು → ಸಕ್ರಿಯ ನಲ್ಲಿ ಟ್ರ್ಯಾಕ್ ಮಾಡಬಹುದು.';
+
+  @override
+  String get billPaymentAfterService => 'ಸೇವೆ ಪೂರ್ಣಗೊಂಡ ನಂತರ ಮಾತ್ರ ಪಾವತಿ';
+
+  @override
+  String get billCancelRequest => 'ವಿನಂತಿಯನ್ನು ರದ್ದುಮಾಡಿ';
+
+  @override
+  String get billKeepRequest => 'ವಿನಂತಿ ಉಳಿಸಿಕೊಳ್ಳಿ';
+
+  @override
+  String get billYesCancel => 'ಹೌದು, ರದ್ದುಮಾಡಿ';
+
+  @override
+  String get billCancelConfirmTitle => 'ವಿನಂತಿಯನ್ನು ರದ್ದುಮಾಡಿ';
+
+  @override
+  String get billCancelConfirmBody =>
+      'ನೀವು ಈ ವಿನಂತಿಯನ್ನು ರದ್ದುಮಾಡಲು ಖಚಿತವಾಗಿದ್ದೀರಾ?\n\nಮೆಕ್ಯಾನಿಕ್‌ಗೆ ತಿಳಿಸಲಾಗುತ್ತದೆ ಮತ್ತು ಯಾವುದೇ ಶುಲ್ಕ ಅನ್ವಯಿಸುವುದಿಲ್ಲ.';
+
+  @override
+  String get billRequestCancelledSuccess =>
+      'ವಿನಂತಿಯನ್ನು ಯಶಸ್ವಿಯಾಗಿ ರದ್ದುಮಾಡಲಾಗಿದೆ.';
+
+  @override
+  String get billCouldNotCancel =>
+      'ವಿನಂತಿಯನ್ನು ರದ್ದುಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
+
+  @override
+  String get billPayByCash => 'ನಗದಿನಲ್ಲಿ ಪಾವತಿಸಿ';
+
+  @override
+  String get billPayDigitally => 'ಡಿಜಿಟಲ್ ಆಗಿ ಪಾವತಿಸಿ';
+
+  @override
+  String get billProcessing => 'ಪ್ರಕ್ರಿಯೆಗೊಳ್ಳುತ್ತಿದೆ…';
+
+  @override
+  String get billSecuredByRazorpay => 'Razorpay ನಿಂದ ಸುರಕ್ಷಿತ';
+
+  @override
+  String get billTestModeNote => '🧪 ಪರೀಕ್ಷಾ ಮೋಡ್ — ನಿಜವಾದ ಶುಲ್ಕಗಳಿಲ್ಲ';
+
+  @override
+  String get billCouldNotSavePayment =>
+      'ನಿಮ್ಮ ಪಾವತಿ ಆದ್ಯತೆಯನ್ನು ಉಳಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
+
+  @override
+  String get billPaymentInitFailed =>
+      'ಪಾವತಿ ಪ್ರಾರಂಭಿಸಲು ವಿಫಲವಾಗಿದೆ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
+
+  @override
+  String get billCashPaymentSelected => 'ನಗದು ಪಾವತಿ ಆಯ್ಕೆ ಮಾಡಲಾಗಿದೆ';
+
+  @override
+  String get billCashAmountDue => 'ಬಾಕಿ ಮೊತ್ತ: ';
+
+  @override
+  String get billCashInstruction =>
+      'ಸೇವೆ ಪೂರ್ಣಗೊಂಡಾಗ ಮೆಕ್ಯಾನಿಕ್‌ಗೆ ನಗದಿನಲ್ಲಿ ಪಾವತಿಸಿ.\n\nಮೆಕ್ಯಾನಿಕ್ ಪಾವತಿಯನ್ನು ದೃಢೀಕರಿಸಿದ ನಂತರ ರಸೀದಿ ಉತ್ಪಾದಿಸಲಾಗುತ್ತದೆ.';
+
+  @override
+  String get billGotIt => 'ಅರ್ಥವಾಯಿತು';
+
+  @override
+  String get receiptTitle => 'ರಸೀದಿ';
+
+  @override
+  String get receiptServiceDetails => 'ಸೇವಾ ವಿವರಗಳು';
+
+  @override
+  String get receiptItemisedCharges => 'ಶುಲ್ಕಗಳ ವಿವರ';
+
+  @override
+  String get receiptPaymentInformation => 'ಪಾವತಿ ಮಾಹಿತಿ';
+
+  @override
+  String get receiptPaymentMethod => 'ವಿಧಾನ';
+
+  @override
+  String get receiptPaymentStatus => 'ಸ್ಥಿತಿ';
+
+  @override
+  String get receiptTransactionId => 'ವ್ಯವಹಾರ ಐಡಿ';
+
+  @override
+  String get receiptReceiptId => 'ರಸೀದಿ ಐಡಿ';
+
+  @override
+  String get receiptPaidOn => 'ಪಾವತಿಸಿದ ದಿನಾಂಕ';
+
+  @override
+  String get receiptIssue => 'ಸಮಸ್ಯೆ';
+
+  @override
+  String get receiptVehicle => 'ವಾಹನ';
+
+  @override
+  String get receiptLocation => 'ಸ್ಥಳ';
+
+  @override
+  String get receiptMechanic => 'ಮೆಕ್ಯಾನಿಕ್';
+
+  @override
+  String get receiptComplexity => 'ಸಂಕೀರ್ಣತೆ';
+
+  @override
+  String get receiptCustomerId => 'ಗ್ರಾಹಕ ಐಡಿ';
+
+  @override
+  String get receiptSubTotal => 'ಉಪ-ಒಟ್ಟು';
+
+  @override
+  String get receiptGst => 'ಜಿಎಸ್‌ಟಿ (18%)';
+
+  @override
+  String get receiptTotalAmount => 'ಒಟ್ಟು ಮೊತ್ತ';
+
+  @override
+  String get receiptBaseCharge => 'ಮೂಲ ಸೇವಾ ಶುಲ್ಕ';
+
+  @override
+  String get receiptLabour => 'ಕಾರ್ಮಿಕ';
+
+  @override
+  String get receiptCallOut => 'ಕಾಲ್-ಔಟ್ / ಪ್ರಯಾಣ ಶುಲ್ಕ';
+
+  @override
+  String get receiptSpareParts => 'ಬಿಡಿ ಭಾಗಗಳು';
+
+  @override
+  String get receiptPlatformFee => 'ಪ್ಲಾಟ್‌ಫಾರ್ಮ್ ಶುಲ್ಕ';
+
+  @override
+  String get receiptPaid => '✓  ಪಾವತಿಸಲಾಗಿದೆ';
+
+  @override
+  String get receiptPending => '⏳  ಪಾವತಿ ಬಾಕಿ';
+
+  @override
+  String get receiptGstNote =>
+      'ಇದು ಅಂದಾಜು ರಸೀದಿ. ಬಳಸಿದ ನಿಜವಾದ ಬಿಡಿ ಭಾಗಗಳ ಆಧಾರದ ಮೇಲೆ ಅಂತಿಮ ಶುಲ್ಕ ಬದಲಾಗಬಹುದು. GST @ 18% ಒಟ್ಟು ಮೊತ್ತದಲ್ಲಿ ಸೇರಿದೆ. ವಿವಾದಗಳಿಗೆ support@mechresq.com ಸಂಪರ್ಕಿಸಿ';
+
+  @override
+  String get receiptThankYou => 'ಮೆಕ್‌ರೆಸ್ಕ್ಯೂ ಆಯ್ಕೆ ಮಾಡಿದ್ದಕ್ಕಾಗಿ ಧನ್ಯವಾದಗಳು!';
+
+  @override
+  String get receiptTagline =>
+      'ಸುರಕ್ಷಿತವಾಗಿ ಚಲಾಯಿಸಿ. ನಿಮಗೆ ಬೇಕಾದಾಗ ನಾವು ಇಲ್ಲಿದ್ದೇವೆ.';
+
+  @override
+  String get receiptDownloadPdf => 'PDF ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ';
+
+  @override
+  String get receiptGenerating => 'ಉತ್ಪಾದಿಸಲಾಗುತ್ತಿದೆ…';
+
+  @override
+  String get receiptPrintPreview => 'ಮುದ್ರಿಸಿ / ಪೂರ್ವಾವಲೋಕನ';
+
+  @override
+  String get receiptNotFound => 'ರಸೀದಿ ಕಂಡುಬಂದಿಲ್ಲ.';
+
+  @override
+  String get receiptLoadFailed =>
+      'ರಸೀದಿ ಲೋಡ್ ಮಾಡಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
+
+  @override
+  String get receiptPdfError =>
+      'PDF ಉತ್ಪಾದಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
+
+  @override
+  String get receiptViewDownload => 'ರಸೀದಿ ವೀಕ್ಷಿಸಿ ಮತ್ತು ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ';
+
+  @override
+  String get receiptViewReceipt => 'ರಸೀದಿ ವೀಕ್ಷಿಸಿ';
+
+  @override
+  String get receiptDigitalMethod => 'ಡಿಜಿಟಲ್ (Razorpay)';
+
+  @override
+  String get receiptSuccessTitle => 'ಪಾವತಿ ಯಶಸ್ವಿ';
+
+  @override
+  String get receiptSuccessPaymentId => 'ಪಾವತಿ ಐಡಿ';
+
+  @override
+  String get receiptSuccessRequestId => 'ವಿನಂತಿ ಐಡಿ';
+
+  @override
+  String get receiptSuccessVehicle => 'ವಾಹನ';
+
+  @override
+  String get receiptSuccessMethod => 'ವಿಧಾನ';
+
+  @override
+  String get receiptSuccessReceiptId => 'ರಸೀದಿ ಐಡಿ';
+
+  @override
+  String get receiptSuccessViewDownload =>
+      'ರಸೀದಿ ವೀಕ್ಷಿಸಿ ಮತ್ತು ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ';
+
+  @override
+  String get historyDeleteRequest => 'ವಿನಂತಿ ಅಳಿಸಿ';
+
+  @override
+  String get historyDeleteConfirm =>
+      'ಈ ವಿನಂತಿಯನ್ನು ಇತಿಹಾಸದಿಂದ ಅಳಿಸುವುದೇ? ಇದನ್ನು ರದ್ದುಗೊಳಿಸಲಾಗುವುದಿಲ್ಲ.';
+
+  @override
+  String get historyDeleteSuccess => 'ವಿನಂತಿ ಅಳಿಸಲಾಗಿದೆ.';
+
+  @override
+  String get historyDeleteError => 'ಅಳಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ: ';
+
+  @override
+  String get historyDeleteAll => 'ಎಲ್ಲಾ ಇತಿಹಾಸ ಅಳಿಸಿ';
+
+  @override
+  String get historyDeleteAllConfirm =>
+      'ಎಲ್ಲಾ ಪೂರ್ಣಗೊಂಡ ಮತ್ತು ರದ್ದಾದ ವಿನಂತಿಗಳನ್ನು ಅಳಿಸುವುದೇ? ರದ್ದುಗೊಳಿಸಲಾಗುವುದಿಲ್ಲ.';
+
+  @override
+  String get historyDeleteAllButton => 'ಎಲ್ಲವನ್ನೂ ಅಳಿಸಿ';
+
+  @override
+  String historyDeleteAllSuccess(int count) {
+    return '$count ವಿನಂತಿ(ಗಳನ್ನು) ಅಳಿಸಲಾಗಿದೆ.';
+  }
+
+  @override
+  String get historyViewBillPay => 'ಬಿಲ್ ವೀಕ್ಷಿಸಿ ಮತ್ತು ಪಾವತಿಸಿ';
+
+  @override
+  String get historyServiceCompleted =>
+      'ಸೇವೆ ಪೂರ್ಣಗೊಂಡಿದೆ. ನಿಮ್ಮ ಬಿಲ್ ವೀಕ್ಷಿಸಿ ಮತ್ತು ಪಾವತಿಸಿ.';
+
+  @override
+  String get historyCashPending =>
+      'ನಗದು ಪಾವತಿ ಬಾಕಿ ಇದೆ. ಸೇವೆ ಮುಗಿದ ನಂತರ ಮೆಕ್ಯಾನಿಕ್‌ಗೆ ಪಾವತಿಸಿ.';
+
+  @override
+  String get historyWaitingMechanic => 'ಮೆಕ್ಯಾನಿಕ್‌ಗಾಗಿ ಕಾಯಲಾಗುತ್ತಿದೆ...';
+
+  @override
+  String get historyViewEstimateCancel => 'ಅಂದಾಜು ವೀಕ್ಷಿಸಿ ಮತ್ತು ರದ್ದುಮಾಡಿ';
+
+  @override
+  String get historyTrackOnMap => 'ನಕ್ಷೆಯಲ್ಲಿ ಟ್ರ್ಯಾಕ್ ಮಾಡಿ';
+
+  @override
+  String get historyPaymentPendingBill =>
+      'ಸೇವೆ ಪೂರ್ಣಗೊಂಡಿದೆ. ನಿಮ್ಮ ಬಿಲ್ ವೀಕ್ಷಿಸಿ ಮತ್ತು ಪಾವತಿಸಿ.';
+
+  @override
+  String get historyKeepRequest => 'ವಿನಂತಿ ಉಳಿಸಿಕೊಳ್ಳಿ';
 }

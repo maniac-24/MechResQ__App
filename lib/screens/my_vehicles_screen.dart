@@ -176,11 +176,6 @@ class _VehiclesList extends StatelessWidget {
 
   Widget _buildVehicleCard(BuildContext context, Vehicle vehicle) {
     final scheme = Theme.of(context).colorScheme;
-    
-    // Debug logging
-    print('🚗 Displaying vehicle: ${vehicle.name}');
-    print('📸 Image URL: ${vehicle.imageUrl}');
-    print('📸 Has image: ${vehicle.imageUrl != null && vehicle.imageUrl!.isNotEmpty}');
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),

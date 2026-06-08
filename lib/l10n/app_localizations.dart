@@ -5449,6 +5449,648 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'General vehicle repair services.'**
   String get generalVehicleRepairServices;
+
+  /// No description provided for @billServiceEstimate.
+  ///
+  /// In en, this message translates to:
+  /// **'Service Estimate'**
+  String get billServiceEstimate;
+
+  /// No description provided for @billServiceBillPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Service Bill & Payment'**
+  String get billServiceBillPayment;
+
+  /// No description provided for @billEstimateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'ESTIMATE'**
+  String get billEstimateLabel;
+
+  /// No description provided for @billBillLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'BILL'**
+  String get billBillLabel;
+
+  /// No description provided for @billRequestDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Details'**
+  String get billRequestDetails;
+
+  /// No description provided for @billVehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle'**
+  String get billVehicle;
+
+  /// No description provided for @billIssue.
+  ///
+  /// In en, this message translates to:
+  /// **'Issue'**
+  String get billIssue;
+
+  /// No description provided for @billLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get billLocation;
+
+  /// No description provided for @billDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance'**
+  String get billDistance;
+
+  /// No description provided for @billComplexityPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Complexity: '**
+  String get billComplexityPrefix;
+
+  /// No description provided for @billDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'Detected: '**
+  String get billDetected;
+
+  /// No description provided for @billPriceBreakdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Price Breakdown'**
+  String get billPriceBreakdown;
+
+  /// No description provided for @billBaseServiceCharge.
+  ///
+  /// In en, this message translates to:
+  /// **'Base Service Charge'**
+  String get billBaseServiceCharge;
+
+  /// No description provided for @billLabourCharges.
+  ///
+  /// In en, this message translates to:
+  /// **'Labour Charges'**
+  String get billLabourCharges;
+
+  /// No description provided for @billCallOutFee.
+  ///
+  /// In en, this message translates to:
+  /// **'Call-Out / Travel Fee'**
+  String get billCallOutFee;
+
+  /// No description provided for @billSpareParts.
+  ///
+  /// In en, this message translates to:
+  /// **'Spare Parts (Estimate)'**
+  String get billSpareParts;
+
+  /// No description provided for @billSparePartsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Actual cost adjusted after service'**
+  String get billSparePartsNote;
+
+  /// No description provided for @billPlatformFee.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform Fee'**
+  String get billPlatformFee;
+
+  /// No description provided for @billPlatformFeeNote.
+  ///
+  /// In en, this message translates to:
+  /// **'MechResQ service fee'**
+  String get billPlatformFeeNote;
+
+  /// No description provided for @billSubTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Sub-Total'**
+  String get billSubTotal;
+
+  /// No description provided for @billGst.
+  ///
+  /// In en, this message translates to:
+  /// **'GST (18%)'**
+  String get billGst;
+
+  /// No description provided for @billGstNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Goods and Services Tax'**
+  String get billGstNote;
+
+  /// No description provided for @billTotalAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'TOTAL AMOUNT'**
+  String get billTotalAmount;
+
+  /// No description provided for @billEstimateNote.
+  ///
+  /// In en, this message translates to:
+  /// **'This is an estimate. Final amount may vary based on actual spare parts used. GST @ 18% included.'**
+  String get billEstimateNote;
+
+  /// No description provided for @billEstimatedTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated Total'**
+  String get billEstimatedTotal;
+
+  /// No description provided for @billEstimateInfoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This is an estimated cost'**
+  String get billEstimateInfoTitle;
+
+  /// No description provided for @billEstimateInfoBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The final amount will be confirmed by the mechanic after service. You will pay only after the service is completed.'**
+  String get billEstimateInfoBody;
+
+  /// No description provided for @billTrackingInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Once a mechanic accepts, you can track them from My Requests → Active.'**
+  String get billTrackingInfo;
+
+  /// No description provided for @billPaymentAfterService.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment happens only after service is completed'**
+  String get billPaymentAfterService;
+
+  /// No description provided for @billCancelRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel Request'**
+  String get billCancelRequest;
+
+  /// No description provided for @billKeepRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Request'**
+  String get billKeepRequest;
+
+  /// No description provided for @billYesCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, Cancel'**
+  String get billYesCancel;
+
+  /// No description provided for @billCancelConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel Request'**
+  String get billCancelConfirmTitle;
+
+  /// No description provided for @billCancelConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to cancel this request?\n\nThe mechanic will be notified and no charges will apply.'**
+  String get billCancelConfirmBody;
+
+  /// No description provided for @billRequestCancelledSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Request cancelled successfully.'**
+  String get billRequestCancelledSuccess;
+
+  /// No description provided for @billCouldNotCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not cancel request. Try again.'**
+  String get billCouldNotCancel;
+
+  /// No description provided for @billPayByCash.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay by Cash'**
+  String get billPayByCash;
+
+  /// No description provided for @billPayDigitally.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay Digitally'**
+  String get billPayDigitally;
+
+  /// No description provided for @billProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing…'**
+  String get billProcessing;
+
+  /// No description provided for @billSecuredByRazorpay.
+  ///
+  /// In en, this message translates to:
+  /// **'Secured by Razorpay'**
+  String get billSecuredByRazorpay;
+
+  /// No description provided for @billTestModeNote.
+  ///
+  /// In en, this message translates to:
+  /// **'🧪 Test mode — no real charges'**
+  String get billTestModeNote;
+
+  /// No description provided for @billCouldNotSavePayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save your payment preference. Please try again.'**
+  String get billCouldNotSavePayment;
+
+  /// No description provided for @billPaymentInitFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment initiation failed. Try again.'**
+  String get billPaymentInitFailed;
+
+  /// No description provided for @billCashPaymentSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash Payment Selected'**
+  String get billCashPaymentSelected;
+
+  /// No description provided for @billCashAmountDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount due: '**
+  String get billCashAmountDue;
+
+  /// No description provided for @billCashInstruction.
+  ///
+  /// In en, this message translates to:
+  /// **'Please pay the mechanic in cash when the service is complete.\n\nYour receipt will be generated once the mechanic confirms payment.'**
+  String get billCashInstruction;
+
+  /// No description provided for @billGotIt.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get billGotIt;
+
+  /// No description provided for @receiptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt'**
+  String get receiptTitle;
+
+  /// No description provided for @receiptServiceDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Service Details'**
+  String get receiptServiceDetails;
+
+  /// No description provided for @receiptItemisedCharges.
+  ///
+  /// In en, this message translates to:
+  /// **'Itemised Charges'**
+  String get receiptItemisedCharges;
+
+  /// No description provided for @receiptPaymentInformation.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Information'**
+  String get receiptPaymentInformation;
+
+  /// No description provided for @receiptPaymentMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Method'**
+  String get receiptPaymentMethod;
+
+  /// No description provided for @receiptPaymentStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get receiptPaymentStatus;
+
+  /// No description provided for @receiptTransactionId.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction ID'**
+  String get receiptTransactionId;
+
+  /// No description provided for @receiptReceiptId.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt ID'**
+  String get receiptReceiptId;
+
+  /// No description provided for @receiptPaidOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid On'**
+  String get receiptPaidOn;
+
+  /// No description provided for @receiptIssue.
+  ///
+  /// In en, this message translates to:
+  /// **'Issue'**
+  String get receiptIssue;
+
+  /// No description provided for @receiptVehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle'**
+  String get receiptVehicle;
+
+  /// No description provided for @receiptLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get receiptLocation;
+
+  /// No description provided for @receiptMechanic.
+  ///
+  /// In en, this message translates to:
+  /// **'Mechanic'**
+  String get receiptMechanic;
+
+  /// No description provided for @receiptComplexity.
+  ///
+  /// In en, this message translates to:
+  /// **'Complexity'**
+  String get receiptComplexity;
+
+  /// No description provided for @receiptCustomerId.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer ID'**
+  String get receiptCustomerId;
+
+  /// No description provided for @receiptSubTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Sub-Total'**
+  String get receiptSubTotal;
+
+  /// No description provided for @receiptGst.
+  ///
+  /// In en, this message translates to:
+  /// **'GST (18%)'**
+  String get receiptGst;
+
+  /// No description provided for @receiptTotalAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'TOTAL AMOUNT'**
+  String get receiptTotalAmount;
+
+  /// No description provided for @receiptBaseCharge.
+  ///
+  /// In en, this message translates to:
+  /// **'Base Service Charge'**
+  String get receiptBaseCharge;
+
+  /// No description provided for @receiptLabour.
+  ///
+  /// In en, this message translates to:
+  /// **'Labour'**
+  String get receiptLabour;
+
+  /// No description provided for @receiptCallOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Call-Out / Travel Fee'**
+  String get receiptCallOut;
+
+  /// No description provided for @receiptSpareParts.
+  ///
+  /// In en, this message translates to:
+  /// **'Spare Parts'**
+  String get receiptSpareParts;
+
+  /// No description provided for @receiptPlatformFee.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform Fee'**
+  String get receiptPlatformFee;
+
+  /// No description provided for @receiptPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'✓  PAID'**
+  String get receiptPaid;
+
+  /// No description provided for @receiptPending.
+  ///
+  /// In en, this message translates to:
+  /// **'⏳  PAYMENT PENDING'**
+  String get receiptPending;
+
+  /// No description provided for @receiptGstNote.
+  ///
+  /// In en, this message translates to:
+  /// **'This receipt is an estimate. Final charges may vary based on actual spare parts used. GST @ 18% is included in the total amount. For disputes contact support@mechresq.com'**
+  String get receiptGstNote;
+
+  /// No description provided for @receiptThankYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you for choosing MechResQ!'**
+  String get receiptThankYou;
+
+  /// No description provided for @receiptTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Drive safe. We\'re always here when you need us.'**
+  String get receiptTagline;
+
+  /// No description provided for @receiptDownloadPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Download PDF'**
+  String get receiptDownloadPdf;
+
+  /// No description provided for @receiptGenerating.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating…'**
+  String get receiptGenerating;
+
+  /// No description provided for @receiptPrintPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Print / Preview'**
+  String get receiptPrintPreview;
+
+  /// No description provided for @receiptNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt not found.'**
+  String get receiptNotFound;
+
+  /// No description provided for @receiptLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load receipt. Please try again.'**
+  String get receiptLoadFailed;
+
+  /// No description provided for @receiptPdfError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not generate PDF. Please try again.'**
+  String get receiptPdfError;
+
+  /// No description provided for @receiptViewDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'View & Download Receipt'**
+  String get receiptViewDownload;
+
+  /// No description provided for @receiptViewReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'View Receipt'**
+  String get receiptViewReceipt;
+
+  /// No description provided for @receiptDigitalMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Digital (Razorpay)'**
+  String get receiptDigitalMethod;
+
+  /// No description provided for @receiptSuccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Successful'**
+  String get receiptSuccessTitle;
+
+  /// No description provided for @receiptSuccessPaymentId.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment ID'**
+  String get receiptSuccessPaymentId;
+
+  /// No description provided for @receiptSuccessRequestId.
+  ///
+  /// In en, this message translates to:
+  /// **'Request ID'**
+  String get receiptSuccessRequestId;
+
+  /// No description provided for @receiptSuccessVehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle'**
+  String get receiptSuccessVehicle;
+
+  /// No description provided for @receiptSuccessMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Method'**
+  String get receiptSuccessMethod;
+
+  /// No description provided for @receiptSuccessReceiptId.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt ID'**
+  String get receiptSuccessReceiptId;
+
+  /// No description provided for @receiptSuccessViewDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'View & Download Receipt'**
+  String get receiptSuccessViewDownload;
+
+  /// No description provided for @historyDeleteRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Request'**
+  String get historyDeleteRequest;
+
+  /// No description provided for @historyDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this request from history? This cannot be undone.'**
+  String get historyDeleteConfirm;
+
+  /// No description provided for @historyDeleteSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Request deleted.'**
+  String get historyDeleteSuccess;
+
+  /// No description provided for @historyDeleteError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete: '**
+  String get historyDeleteError;
+
+  /// No description provided for @historyDeleteAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete All History'**
+  String get historyDeleteAll;
+
+  /// No description provided for @historyDeleteAllConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete all completed and cancelled requests? Cannot be undone.'**
+  String get historyDeleteAllConfirm;
+
+  /// No description provided for @historyDeleteAllButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete All'**
+  String get historyDeleteAllButton;
+
+  /// No description provided for @historyDeleteAllSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted {count} item(s).'**
+  String historyDeleteAllSuccess(int count);
+
+  /// No description provided for @historyViewBillPay.
+  ///
+  /// In en, this message translates to:
+  /// **'View Bill & Pay'**
+  String get historyViewBillPay;
+
+  /// No description provided for @historyServiceCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Service completed. View your bill and pay.'**
+  String get historyServiceCompleted;
+
+  /// No description provided for @historyCashPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash payment pending. Pay mechanic when service is done.'**
+  String get historyCashPending;
+
+  /// No description provided for @historyWaitingMechanic.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for a mechanic...'**
+  String get historyWaitingMechanic;
+
+  /// No description provided for @historyViewEstimateCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'View Estimate & Cancel'**
+  String get historyViewEstimateCancel;
+
+  /// No description provided for @historyTrackOnMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Track on Map'**
+  String get historyTrackOnMap;
+
+  /// No description provided for @historyPaymentPendingBill.
+  ///
+  /// In en, this message translates to:
+  /// **'Service completed. View your bill and pay.'**
+  String get historyPaymentPendingBill;
+
+  /// No description provided for @historyKeepRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Request'**
+  String get historyKeepRequest;
 }
 
 class _AppLocalizationsDelegate

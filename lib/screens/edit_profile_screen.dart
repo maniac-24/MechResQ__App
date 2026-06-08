@@ -169,10 +169,6 @@ class _EditProfileScreenState extends State<EditProfileScreen>
   String _getLocalizedStateName(String stateKey, BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     
-    // Debug: Check current locale
-    debugPrint('🌍 Current locale: ${l10n.localeName}');
-    debugPrint('🗺️ Looking up state: "$stateKey"');
-    
     // Trim whitespace and normalize the key for comparison
     final normalizedKey = stateKey.trim();
     
@@ -249,12 +245,9 @@ class _EditProfileScreenState extends State<EditProfileScreen>
         result = l10n.stateWestBengal;
         break;
       default:
-        // Debug: print what key we couldn't find
-        debugPrint('⚠️ State key not found in localization: "$normalizedKey"');
         result = stateKey; // Fallback to English key if not found
     }
     
-    debugPrint('✅ Returning localized state: "$result"');
     return result;
   }
 

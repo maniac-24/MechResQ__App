@@ -266,12 +266,12 @@ class ReviewService {
       if (previousVote == isHelpful) {
         // Remove vote if clicking same button
         await voteRef.delete();
-        await _updateReviewVoteCounts(reviewId, isHelpful, increment: false);
+        await _updateReviewVoteCounts(reviewId, isHelpful, false);
       } else {
         // Change vote
         await voteRef.update({'isHelpful': isHelpful});
-        await _updateReviewVoteCounts(reviewId, !isHelpful, increment: false);
-        await _updateReviewVoteCounts(reviewId, isHelpful, increment: true);
+        await _updateReviewVoteCounts(reviewId, !isHelpful, false);
+        await _updateReviewVoteCounts(reviewId, isHelpful, true);
       }
     } else {
       // Create new vote
@@ -280,14 +280,14 @@ class ReviewService {
         'isHelpful': isHelpful,
         'createdAt': FieldValue.serverTimestamp(),
       });
-      await _updateReviewVoteCounts(reviewId, isHelpful, increment: true);
+      await _updateReviewVoteCounts(reviewId, isHelpful, true);
     }
   }
 
   Future<void> _updateReviewVoteCounts(
     String reviewId,
     bool isHelpful,
-    {required bool increment},
+    bool increment,
   ) async {
     final field = isHelpful ? 'helpfulCount' : 'notHelpfulCount';
     await _db.collection('reviews').doc(reviewId).update({

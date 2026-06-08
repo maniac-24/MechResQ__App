@@ -31,6 +31,11 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("debug")
+            // ProGuard rules for Razorpay
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }

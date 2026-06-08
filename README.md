@@ -1,126 +1,91 @@
-# 🚗 MechResQ - Emergency Roadside Assistance App
+# MechResQ - Emergency Roadside Assistance App
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.10%2B-02569B?logo=flutter)](https://flutter.dev)
 [![Firebase](https://img.shields.io/badge/Firebase-Enabled-FFCA28?logo=firebase)](https://firebase.google.com)
 [![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
 
-**MechResQ** is a comprehensive emergency roadside assistance mobile application built with Flutter. It connects users with nearby mechanics during vehicle emergencies, providing real-time tracking, SOS features, and seamless communication.
+**MechResQ** is a comprehensive emergency roadside assistance mobile application built with Flutter. It connects users with nearby mechanics during vehicle emergencies, providing real-time tracking, service billing, digital payments, receipt generation, and multi-language support.
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
-- [Features](#-features)
-- [Screenshots](#-screenshots)
-- [Architecture](#-architecture)
-- [Tech Stack](#-tech-stack)
-- [Project Structure](#-project-structure)
-- [Getting Started](#-getting-started)
-- [Configuration](#-configuration)
-- [Localization](#-localization)
-- [Firebase Setup](#-firebase-setup)
-- [Permissions](#-permissions)
-- [Build & Run](#-build--run)
-- [Key Services](#-key-services)
-- [Contributing](#-contributing)
-- [License](#-license)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [Configuration](#configuration)
+- [Localization](#localization)
+- [Firebase Setup](#firebase-setup)
+- [Permissions](#permissions)
+- [Build and Run](#build-and-run)
+- [Key Services](#key-services)
+- [App Statistics](#app-statistics)
+- [Theming](#theming)
+- [Roadmap](#roadmap)
+- [License](#license)
 
 ---
 
-## 🚀 Features
+## Features
 
 ### Core Features
-- 🆘 **Emergency SOS** - Quick access to emergency assistance with one tap
-- 📍 **Real-time Location Tracking** - Live mechanic tracking with Google Maps integration
-- 🔍 **Find Nearby Mechanics** - Discover mechanics based on your current location
-- 💬 **In-app Chat** - Direct communication with assigned mechanics
-- ⭐ **Ratings & Reviews** - Rate and review mechanic services
-- 📱 **Service Request Management** - Create, track, and manage service requests
+- **Emergency SOS** - Quick access to emergency assistance with one tap
+- **Real-time Location Tracking** - Live mechanic tracking with Google Maps integration
+- **Find Nearby Mechanics** - Discover mechanics based on your current location
+- **In-app Chat** - Direct communication with assigned mechanics
+- **Ratings and Reviews** - Rate and review mechanic services
+- **Service Request Management** - Create, track, and manage service requests
+
+### Billing and Payments
+- **Smart Bill Screen** - Auto-calculated service estimate shown immediately after request creation
+- **Dynamic Pricing Engine** - Calculates cost based on vehicle type, issue complexity, distance, labour, spare parts, platform fee, and GST (18%)
+- **Pay by Cash or Digitally** - Razorpay integration for digital payments; cash payment flow with confirmation
+- **Digital Receipts** - Instant PDF receipt generation after digital payment
+- **PDF Download** - Unlimited receipt downloads with MechResQ branding
+- **Payment History** - Full payment history screen with filter options
+
+### Request Lifecycle
+- **Estimate Mode** - Bill screen shown after submission with Cancel Request option
+- **Tracking Mode** - Track on Map button appears in Active tab when request is accepted
+- **History Mode** - View Bill and Pay button in History tab for completed requests
+- **Receipt View** - View Receipt button after payment; accessible from History tab indefinitely
 
 ### User Management
-- 🔐 **Multi-auth Support** - Email/Password and Google Sign-In
-- 👤 **Profile Management** - Complete user profile with personal and vehicle information
-- 🚙 **Vehicle Management** - Add and manage multiple vehicles
-- 👥 **Emergency Contacts** - Store and manage emergency contact information
-- 🔔 **Service Reminders** - Schedule and receive vehicle service reminders
+- **Multi-auth Support** - Email/Password and Google Sign-In
+- **Profile Management** - Complete user profile with personal and vehicle information
+- **Vehicle Management** - Add and manage multiple vehicles
+- **Emergency Contacts** - Store and manage emergency contact information
+- **Service Reminders** - Schedule and receive vehicle service reminders
 
 ### Additional Features
-- 🌍 **Multi-language Support** - English and Kannada (more languages planned)
-- 🌙 **Dark/Light Theme** - Hazard-focused theme with customizable appearance
-- 🔔 **Push Notifications** - Real-time notifications for service updates
-- 📊 **Request History** - View all past service requests
-- 🆘 **SOS History** - Track all emergency events
-- 📄 **Legal & Support** - Terms, Privacy Policy, and Help documentation
+- **Multi-language Support** - English and Kannada with full localization coverage
+- **Dark and Light Theme** - Hazard-focused theme with customizable appearance
+- **Push Notifications** - Real-time notifications for service updates with smart navigation
+- **Request History** - View all past service requests with delete options (individual and bulk)
+- **SOS History** - Track all emergency events
+- **Legal and Support** - Terms, Privacy Policy, and Help documentation
 
 ---
 
-## 📱 Screenshots
+## Architecture
 
-<div align="center">
-
-### Login Screen
-<img src="screenshots/login_screen.png" width="250" alt="Login Screen"/>
-
-*Phone number authentication with OTP verification*
-
----
-
-### Home Screen
-<img src="screenshots/home_screen.png" width="250" alt="Home Screen"/>
-
-*Interactive map showing nearby mechanics with search functionality*
-
----
-
-### Emergency SOS
-<img src="screenshots/emergency_sos.png" width="250" alt="Emergency SOS"/>
-
-*One-tap emergency assistance with location sharing*
-
----
-
-### Create Service Request
-<img src="screenshots/create_request.png" width="250" alt="Create Request"/>
-
-*Detailed service request form with vehicle type selection*
-
----
-
-### Filters
-<img src="screenshots/filters.png" width="250" alt="Filters"/>
-
-*Advanced filtering by vehicle type, distance, and ratings*
-
----
-
-### Side Drawer
-<img src="screenshots/side_drawer.png" width="250" alt="Side Drawer"/>
-
-*Quick navigation to profile, reminders, settings, and emergency*
-
-</div>
-
-> **Note:** To add screenshots, save the images in the `screenshots/` directory with the names shown above. See `screenshots/README.md` for detailed guidelines.
-
----
-
-## 🏗️ Architecture
-
-MechResQ follows a **feature-based architecture** with clear separation of concerns:
+MechResQ follows a feature-based architecture with clear separation of concerns:
 
 ```
 lib/
-├── core/           # Core utilities and constants
-├── l10n/           # Localization files (English & Kannada)
-├── models/         # Data models
-├── screens/        # UI screens (29 screens)
-├── services/       # Business logic and Firebase integration
-├── utils/          # Helper utilities
-├── widgets/        # Reusable UI components
-├── locale_provider.dart    # Language management
-├── theme_controller.dart   # Theme management
-├── theme.dart              # App theming
-└── main.dart              # App entry point
++-- core/           # Core utilities and constants
++-- l10n/           # Localization files (English and Kannada)
++-- models/         # Data models
++-- screens/        # UI screens
++-- services/       # Business logic and Firebase integration
++-- utils/          # Helper utilities
++-- widgets/        # Reusable UI components
++-- locale_provider.dart    # Language management
++-- theme_controller.dart   # Theme management
++-- theme.dart              # App theming
++-- main.dart               # App entry point
 ```
 
 ### Design Patterns
@@ -131,23 +96,28 @@ lib/
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Frontend
 - **Flutter** 3.10+ - Cross-platform UI framework
 - **Material Design 3** - Modern UI components
 - **Provider** - State management solution
 
-### Backend & Services
+### Backend and Services
 - **Firebase Authentication** - User authentication (Email, Google)
 - **Cloud Firestore** - Real-time NoSQL database
 - **Firebase Storage** - Image and file storage
 - **Firebase Cloud Messaging** - Push notifications
 
-### Maps & Location
+### Maps and Location
 - **Google Maps Flutter** - Map integration
 - **Geolocator** - Location services
 - **Geocoding** - Address resolution
+
+### Payments
+- **Razorpay Flutter** - Payment gateway (Test and Live mode support)
+- **PDF** - Receipt and invoice generation
+- **Printing** - PDF preview, download, and share
 
 ### Additional Packages
 - **flutter_localizations** - Internationalization
@@ -158,110 +128,126 @@ lib/
 - **flutter_secure_storage** - Secure data storage
 - **permission_handler** - Runtime permissions
 - **timezone** - Timezone handling
+- **path_provider** - File system access for PDF saving
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 MechResQ_App/
-├── android/                    # Android native code
-├── ios/                        # iOS native code
-├── assets/                     # Images, icons, and assets
-│   ├── icons/                 # App icons
-│   └── mechresq_logo.png      # App logo
-├── lib/
-│   ├── core/                  # Core utilities
-│   ├── l10n/                  # Localization
-│   │   ├── app_en.arb        # English translations (264+ strings)
-│   │   ├── app_kn.arb        # Kannada translations (264+ strings)
-│   │   └── app_localizations.dart
-│   ├── models/                # Data models
-│   │   ├── emergency_contact.dart
-│   │   ├── request_tracking.dart
-│   │   ├── service_reminder.dart
-│   │   ├── sos_event.dart
-│   │   └── vehicle.dart
-│   ├── screens/               # UI Screens (29 screens)
-│   │   ├── login_screen.dart
-│   │   ├── home_screen.dart
-│   │   ├── create_request_screen.dart
-│   │   ├── track_mechanic_screen.dart
-│   │   ├── live_tracking_map_screen.dart
-│   │   ├── chat_mechanic_screen.dart
-│   │   ├── profile_screen.dart
-│   │   ├── my_vehicles_screen.dart
-│   │   ├── service_reminders_screen.dart
-│   │   ├── sos_screen.dart
-│   │   ├── settings_screen.dart
-│   │   └── ... (20+ more screens)
-│   ├── services/              # Business logic services
-│   │   ├── auth_service.dart
-│   │   ├── firestore_service.dart
-│   │   ├── location_service.dart
-│   │   ├── notification_service.dart
-│   │   ├── request_service.dart
-│   │   ├── sos_service.dart
-│   │   └── ... (12 services total)
-│   ├── utils/                 # Helper utilities
-│   ├── widgets/               # Reusable components
-│   ├── locale_provider.dart   # Language management
-│   ├── theme_controller.dart  # Theme management
-│   ├── theme.dart            # App theming
-│   └── main.dart             # Entry point
-├── test/                      # Unit and widget tests
-├── pubspec.yaml              # Dependencies
-├── l10n.yaml                 # Localization config
-└── README.md                 # This file
++-- android/                    # Android native code
++-- ios/                        # iOS native code
++-- assets/                     # Images, icons, and assets
+|   +-- icons/                 # App icons
+|   +-- mechresq_logo.png      # App logo (used in receipts and PDF)
+|   +-- mechresq_logo.svg      # SVG version of logo
++-- lib/
+|   +-- core/                  # Core utilities
+|   |   +-- config/
+|   |       +-- payment_config.dart   # Razorpay keys and settings
+|   +-- l10n/                  # Localization
+|   |   +-- app_en.arb         # English translations (350+ strings)
+|   |   +-- app_kn.arb         # Kannada translations (350+ strings)
+|   |   +-- app_localizations.dart
+|   +-- models/                # Data models
+|   |   +-- emergency_contact.dart
+|   |   +-- payment.dart
+|   |   +-- receipt.dart
+|   |   +-- request_tracking.dart
+|   |   +-- service_reminder.dart
+|   |   +-- sos_event.dart
+|   |   +-- vehicle.dart
+|   +-- screens/               # UI Screens
+|   |   +-- bill_screen.dart
+|   |   +-- chat_mechanic_screen.dart
+|   |   +-- create_request_screen.dart
+|   |   +-- home_screen.dart
+|   |   +-- login_screen.dart
+|   |   +-- my_requests_screen.dart
+|   |   +-- payment_history_screen.dart
+|   |   +-- receipt_detail_screen.dart
+|   |   +-- receipt_success_screen.dart
+|   |   +-- request_tracking_screen.dart
+|   |   +-- settings_screen.dart
+|   |   +-- submit_review_screen.dart
+|   |   +-- track_mechanic_screen.dart
+|   |   +-- ... (additional screens)
+|   +-- services/              # Business logic services
+|   |   +-- auth_service.dart
+|   |   +-- billing_service.dart
+|   |   +-- firestore_service.dart
+|   |   +-- location_service.dart
+|   |   +-- notification_service.dart
+|   |   +-- payment_firestore_service.dart
+|   |   +-- pdf_receipt_service.dart
+|   |   +-- razorpay_service.dart
+|   |   +-- receipt_service.dart
+|   |   +-- request_firestore_service.dart
+|   |   +-- request_tracking_service.dart
+|   |   +-- review_service.dart
+|   |   +-- sos_service.dart
+|   |   +-- vehicle_service.dart
+|   +-- utils/                 # Helper utilities
+|   +-- widgets/               # Reusable components
+|   +-- locale_provider.dart   # Language management
+|   +-- theme_controller.dart  # Theme management
+|   +-- theme.dart             # App theming
+|   +-- main.dart              # Entry point
++-- test/                      # Unit and widget tests
++-- pubspec.yaml               # Dependencies
++-- l10n.yaml                  # Localization config
++-- README.md                  # This file
 ```
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
-- **Flutter SDK** 3.10.0 or higher
-- **Dart SDK** 3.10.0 or higher
-- **Android Studio** / **Xcode** (for mobile development)
-- **Firebase Account** (for backend services)
-- **Google Maps API Key** (for map features)
+- Flutter SDK 3.10.0 or higher
+- Dart SDK 3.10.0 or higher
+- Android Studio or Xcode (for mobile development)
+- Firebase Account (for backend services)
+- Google Maps API Key (for map features)
+- Razorpay Account (for payment features)
 
 ### Installation
 
-1. **Clone the repository**
+1. Clone the repository
    ```bash
    git clone <repository-url>
    cd MechResQ_App
    ```
 
-2. **Install dependencies**
+2. Install dependencies
    ```bash
    flutter pub get
    ```
 
-3. **Generate localization files**
+3. Generate localization files
    ```bash
    flutter gen-l10n
    ```
 
-4. **Configure Firebase** (see [Firebase Setup](#-firebase-setup))
+4. Configure Firebase (see Firebase Setup section)
 
-5. **Add Google Maps API Key** (see [Configuration](#-configuration))
+5. Add Google Maps API Key (see Configuration section)
 
-6. **Run the app**
+6. Run the app
    ```bash
    flutter run
    ```
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
 ### Google Maps API Key
 
 1. Get an API key from [Google Cloud Console](https://console.cloud.google.com/)
-2. Enable **Maps SDK for Android** and **Maps SDK for iOS**
+2. Enable Maps SDK for Android and Maps SDK for iOS
 3. Add the key to:
 
 **Android:** `android/app/src/main/AndroidManifest.xml`
@@ -276,61 +262,44 @@ MechResQ_App/
 GMSServices.provideAPIKey("YOUR_API_KEY_HERE")
 ```
 
-### Environment Variables
+### Razorpay Configuration
 
-Create a `.env` file (if needed) for sensitive configuration:
-```env
-GOOGLE_MAPS_API_KEY=your_api_key_here
-FIREBASE_API_KEY=your_firebase_key_here
+Open `lib/core/config/payment_config.dart` and update:
+
+```dart
+static const String razorpayKeyId = 'rzp_live_YOUR_KEY_HERE';
+static const bool isTestMode = false;
 ```
+
+For test mode, use the test key. For production, replace with your live key from the Razorpay Dashboard.
 
 ---
 
-## 🌍 Localization
+## Localization
 
-MechResQ supports **multi-language internationalization**:
+MechResQ supports multi-language internationalization.
 
 ### Supported Languages
-- 🇬🇧 **English** (en) - Complete
-- 🇮🇳 **Kannada** (kn) - Complete (264+ strings)
+- English (en) - Complete (350+ strings)
+- Kannada (kn) - Complete (350+ strings)
 
-### Future Languages (Planned)
+### Planned Languages
 - Hindi (hi)
 - Tamil (ta)
 - Telugu (te)
 - Malayalam (ml)
-- Bengali (bn)
-- Marathi (mr)
-- Gujarati (gu)
-- Punjabi (pa)
-- Odia (or)
-- Urdu (ur)
 
-### Localization Coverage
-- ✅ **29 screens** fully localized
-- ✅ **264+ strings** translated
-- ✅ **100% UI coverage**
-- ✅ Dynamic language switching
-- ✅ Localized data display (states, languages, gender)
-
-### How Localization Works
-
-1. **Storage**: Data is stored in English keys in Firebase (e.g., "Karnataka", "Male")
-2. **Display**: UI displays localized names based on current app language
-3. **Switching**: Users can change language in Settings → Language
-4. **Persistence**: Language preference is saved using SharedPreferences
+### Coverage
+- All screens fully localized
+- Dynamic language switching at runtime
+- Language preference persisted across app restarts
+- Billing and receipt screens fully translated
 
 ### Adding a New Language
 
 1. Create a new ARB file: `lib/l10n/app_<locale>.arb`
 2. Copy `app_en.arb` and translate all strings
-3. Add locale to `l10n.yaml`:
-   ```yaml
-   arb-dir: lib/l10n
-   template-arb-file: app_en.arb
-   output-localization-file: app_localizations.dart
-   ```
-4. Add to `main.dart` supported locales:
+3. Add the locale to `main.dart` supported locales:
    ```dart
    supportedLocales: const [
      Locale('en'),
@@ -338,15 +307,15 @@ MechResQ supports **multi-language internationalization**:
      Locale('hi'), // New language
    ]
    ```
-5. Run `flutter gen-l10n`
+4. Run `flutter gen-l10n`
 
 ---
 
-## 🔥 Firebase Setup
+## Firebase Setup
 
 ### 1. Create Firebase Project
 1. Go to [Firebase Console](https://console.firebase.google.com/)
-2. Create a new project or use existing
+2. Create a new project
 3. Add Android and/or iOS app
 
 ### 2. Download Configuration Files
@@ -361,38 +330,46 @@ MechResQ supports **multi-language internationalization**:
 
 ### 3. Enable Firebase Services
 
-Enable the following in Firebase Console:
+- Authentication: Email/Password and Google Sign-In
+- Cloud Firestore: Create database
+- Cloud Storage: Create storage bucket
+- Cloud Messaging: Enable for push notifications
 
-- ✅ **Authentication**
-  - Email/Password
-  - Google Sign-In
-- ✅ **Cloud Firestore**
-  - Create database (start in test mode)
-- ✅ **Cloud Storage**
-  - Create storage bucket
-- ✅ **Cloud Messaging**
-  - Enable for push notifications
+### 4. Firestore Collections
 
-### 4. Firestore Security Rules
+The app uses the following Firestore collections:
+
+| Collection | Purpose |
+|---|---|
+| `users` | User profiles |
+| `requests` | Service requests |
+| `requestTracking` | Real-time mechanic tracking |
+| `payments` | Payment transactions (legacy) |
+| `receipts` | Service receipts (current) |
+| `reviews` | Mechanic ratings and reviews |
+| `mechanics` | Mechanic profiles (read by user app) |
+| `sosEvents` | SOS emergency events |
+
+### 5. Firestore Security Rules
 
 ```javascript
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users collection
     match /users/{userId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && request.auth.uid == userId;
     }
-    
-    // Service requests
     match /requests/{requestId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null;
       allow update: if request.auth != null;
     }
-    
-    // Reviews
+    match /receipts/{receiptId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
+    }
     match /reviews/{reviewId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null;
@@ -401,55 +378,25 @@ service cloud.firestore {
 }
 ```
 
-### 5. Storage Rules
-
-```javascript
-rules_version = '2';
-service firebase.storage {
-  match /b/{bucket}/o {
-    match /profile_pictures/{userId}/{fileName} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == userId;
-    }
-    
-    match /request_images/{requestId}/{fileName} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null;
-    }
-  }
-}
-```
-
 ---
 
-## 🔐 Permissions
+## Permissions
 
 ### Android Permissions (`AndroidManifest.xml`)
 
 ```xml
-<!-- Location -->
+<uses-permission android:name="android.permission.INTERNET"/>
 <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
-
-<!-- Notifications -->
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-
-<!-- Camera -->
 <uses-permission android:name="android.permission.CAMERA"/>
-
-<!-- Storage (Android 12 and below) -->
 <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
 <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-
-<!-- Media (Android 13+) -->
 <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
-<uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>
 ```
 
 ### iOS Permissions (`Info.plist`)
-
-Add the following keys to `ios/Runner/Info.plist`:
 
 ```xml
 <key>NSLocationWhenInUseUsageDescription</key>
@@ -467,30 +414,32 @@ Add the following keys to `ios/Runner/Info.plist`:
 
 ---
 
-## 🔨 Build & Run
+## Build and Run
 
 ### Development Build
 
 ```bash
-# Run on connected device/emulator
+# Run on connected device or emulator
 flutter run
 
 # Run on specific device
 flutter devices
 flutter run -d <device-id>
-
-# Run with specific locale
-flutter run --dart-define=INITIAL_LOCALE=kn
 ```
 
 ### Production Build
 
-**Android APK:**
+**Android APK (single file):**
 ```bash
 flutter build apk --release
 ```
 
-**Android App Bundle (Play Store):**
+**Android APK (split by architecture - smaller size):**
+```bash
+flutter build apk --release --split-per-abi
+```
+
+**Android App Bundle (Play Store - recommended):**
 ```bash
 flutter build appbundle --release
 ```
@@ -509,166 +458,137 @@ flutter analyze
 # Run tests
 flutter test
 
-# Check dependencies
+# Check for outdated dependencies
 flutter pub outdated
 
 # Clean build cache
-flutter clean
-flutter pub get
+flutter clean && flutter pub get
 ```
 
 ---
 
-## 🔧 Key Services
+## Key Services
 
-### Authentication Service (`auth_service.dart`)
-- User registration and login
-- Google Sign-In integration
-- Password reset
-- Session management
+### BillingService (`billing_service.dart`)
+- Calculates service estimates based on vehicle type, issue description keywords, distance, and fixed charges
+- Complexity detection: Low, Medium, High, Critical based on keywords
+- Charges: Base service fee, Labour, Call-out/travel, Spare parts estimate, Platform fee, GST 18%
 
-### Firestore Service (`firestore_service.dart`)
-- User profile CRUD operations
-- Data synchronization
-- Real-time updates
+### RazorpayService (`razorpay_service.dart`)
+- Wraps the Razorpay Flutter SDK
+- Handles payment success, failure, and external wallet events
+- Test mode and live mode configuration
 
-### Location Service (`location_service.dart`)
-- Get current location
-- Track location changes
-- Calculate distances
-- Geocoding and reverse geocoding
+### ReceiptService (`receipt_service.dart`)
+- CRUD operations on the `receipts` Firestore collection
+- Marks receipts as paid (digital via Razorpay or cash via mechanic confirmation)
+- Real-time stream of user receipts
 
-### Request Service (`request_service.dart`)
-- Create service requests
-- Track request status
-- Assign mechanics
-- Request history
+### PdfReceiptService (`pdf_receipt_service.dart`)
+- Generates single-page A4 PDF receipts using the `pdf` package
+- Includes MechResQ logo, itemised breakdown, payment info, GST note
+- Share or save via system sheet using the `printing` package
 
-### Notification Service (`notification_service.dart`)
-- Local notifications
-- Push notifications (FCM)
-- Notification channels
-- Scheduled reminders
+### RequestTrackingService (`request_tracking_service.dart`)
+- Manages the `requestTracking` Firestore collection
+- Creates tracking documents on request submission
+- Falls back to `requests` collection if tracking doc is missing (auto-creates)
+- Sends local notifications on status transitions
 
-### SOS Service (`sos_service.dart`)
-- Emergency alert system
-- Send distress signals
-- Contact emergency contacts
-- Location sharing
+### NotificationService (`notification_service.dart`)
+- Local notifications via `flutter_local_notifications`
+- FCM integration via `firebase_messaging`
+- Smart navigation on notification tap
+- Typed convenience methods for each notification event
 
-### Review Service (`review_service.dart`)
-- Submit ratings and reviews
-- View mechanic reviews
-- Calculate average ratings
+### ReviewService (`review_service.dart`)
+- Submit, update, and delete mechanic reviews
+- Recalculates mechanic average rating on each submission
+- Helpful/not-helpful vote system
 
-### Vehicle Service (`vehicle_service.dart`)
-- Add/edit/delete vehicles
-- Vehicle information management
-- Service history
+### AuthService (`auth_service.dart`)
+- Email/Password registration and login
+- Google Sign-In
+- Password reset and session management
 
 ---
 
-## 📊 App Statistics
+## App Statistics
 
-- **Total Screens:** 29
-- **Total Services:** 12
-- **Total Models:** 5
-- **Localized Strings:** 264+ (per language)
-- **Supported Languages:** 2 (English, Kannada)
-- **Firebase Services:** 4 (Auth, Firestore, Storage, Messaging)
-- **Total Dart Files:** 67+
-
----
-
-## 🎨 Theming
-
-MechResQ uses a **hazard-focused theme** with:
-
-- **Primary Color:** High-visibility orange/yellow
-- **Dark Theme:** Available for low-light conditions
-- **Material Design 3:** Modern, accessible UI components
-- **Custom Theme Controller:** Dynamic theme switching
+| Metric | Value |
+|---|---|
+| Screens | 35+ |
+| Services | 15+ |
+| Models | 7 |
+| Localized Strings | 350+ per language |
+| Supported Languages | 2 (English, Kannada) |
+| Firebase Services | 4 (Auth, Firestore, Storage, Messaging) |
+| Payment Gateway | Razorpay |
 
 ---
 
-## 🧪 Testing
+## Theming
 
-```bash
-# Run all tests
-flutter test
+MechResQ uses a hazard-focused theme:
 
-# Run specific test file
-flutter test test/widget_test.dart
-
-# Run with coverage
-flutter test --coverage
-
-# View coverage report
-genhtml coverage/lcov.info -o coverage/html
-open coverage/html/index.html
-```
+- **Primary Color:** High-visibility yellow (#FFD400)
+- **Accent Color:** Orange (#FF8A00)
+- **Dark Theme:** Full dark mode support with hazard palette
+- **Light Theme:** Clean white background with yellow primary
+- **Material Design 3:** Modern accessible UI components
+- **Dynamic Switching:** Users can switch Light, Dark, or System in Settings
 
 ---
 
-## 🤝 Contributing
+## Roadmap
 
-We welcome contributions! Please follow these guidelines:
+### Version 1.0 (Current)
+- [x] Core service request and tracking features
+- [x] Real-time location tracking
+- [x] Bill screen with smart pricing engine
+- [x] Razorpay digital payments
+- [x] PDF receipt generation and download
+- [x] Multi-language support (English, Kannada)
+- [x] Push notifications with smart navigation
+- [x] User profile and vehicle management
+- [x] SOS emergency features
+- [x] Ratings and reviews system
+- [x] Request history with bulk delete
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+### Version 1.1 (Upcoming)
+- [ ] Mechanic app (separate app for mechanics)
+- [ ] Cash payment confirmation by mechanic
+- [ ] Auto-trigger review screen after service completion
+- [ ] Real GPS distance passed to billing
+- [ ] FCM token saved to Firestore for server-push notifications
+- [ ] Chat with Firebase Realtime integration
+- [ ] Add more languages (Hindi, Tamil, Telugu)
 
-### Code Style
-- Follow [Effective Dart](https://dart.dev/guides/language/effective-dart) guidelines
-- Use meaningful variable and function names
-- Add comments for complex logic
-- Write tests for new features
+### Version 1.2 (Future)
+- [ ] AI-powered issue diagnosis
+- [ ] Video call support
+- [ ] Subscription plans for mechanics
+- [ ] Referral and promo code system
+- [ ] Advanced analytics dashboard
 
 ---
 
-## 📝 License
+## License
 
 This project is proprietary software. All rights reserved.
 
 ---
 
-## 👥 Team
-
-Developed with ❤️ by the MechResQ Team
-
----
-
-## 📞 Support
+## Support
 
 For support, email support@mechresq.com or open an issue in the repository.
 
 ---
 
-## 🗺️ Roadmap
-
-### Version 1.1 (Upcoming)
-- [ ] Add more languages (Hindi, Tamil, Telugu)
-- [ ] Mechanic app (separate app for mechanics)
-- [ ] Payment integration
-- [ ] Advanced analytics dashboard
-
-### Version 1.2 (Future)
-- [ ] AI-powered issue diagnosis
-- [ ] Video call support
-- [ ] Subscription plans
-- [ ] Referral system
-
----
-
-## 📚 Additional Resources
+## Additional Resources
 
 - [Flutter Documentation](https://docs.flutter.dev/)
 - [Firebase Documentation](https://firebase.google.com/docs)
 - [Google Maps Flutter Plugin](https://pub.dev/packages/google_maps_flutter)
+- [Razorpay Flutter SDK](https://pub.dev/packages/razorpay_flutter)
 - [Provider Package](https://pub.dev/packages/provider)
-
----
-
-**Made with Flutter 💙**

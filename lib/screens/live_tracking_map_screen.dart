@@ -1,7 +1,9 @@
 // lib/screens/live_tracking_map_screen.dart
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
+import '../services/request_tracking_location_service.dart';
 
 /// Type-safe tracking status enum
 enum TrackingStatus {
@@ -10,16 +12,18 @@ enum TrackingStatus {
 }
 
 class LiveTrackingMapScreen extends StatefulWidget {
+  final String requestId;
   final String mechanicName;
-  final double distanceKm;
-  final int etaMinutes;
+  final double initialDistanceKm;
+  final int initialEtaMinutes;
   final TrackingStatus status;
 
   const LiveTrackingMapScreen({
     super.key,
+    required this.requestId,
     required this.mechanicName,
-    required this.distanceKm,
-    required this.etaMinutes,
+    required this.initialDistanceKm,
+    required this.initialEtaMinutes,
     this.status = TrackingStatus.onTheWay,
   });
 
@@ -28,40 +32,70 @@ class LiveTrackingMapScreen extends StatefulWidget {
 }
 
 class _LiveTrackingMapScreenState extends State<LiveTrackingMapScreen> {
-  // Simulated live values — replace with stream from Firestore / WebSocket
-  late double _dist;
-  late int _eta;
-  late TrackingStatus _status;
+  final RequestTrackingLocationService _locationService = RequestTrackingLocationService();
+  
+  StreamSubscription<RequestTrackingLocation?>? _locationSubscription;
+  
+  // Real-time values updated from Firestore
+  double _distanceKm = 0;
+  int _etaMinutes = 0;
+  TrackingStatus _status = TrackingStatus.onTheWay;
+  RequestTrackingLocation? _currentLocation;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _dist = widget.distanceKm;
-    _eta = widget.etaMinutes;
+    _distanceKm = widget.initialDistanceKm;
+    _etaMinutes = widget.initialEtaMinutes;
     _status = widget.status;
-
-    // DEMO ONLY: simulate mechanic getting closer every 4 seconds
-    // TODO: Replace with real Firestore stream or WebSocket
-    _startSimulation();
+    
+    // Start streaming mechanic location from Firestore
+    _startRealTimeTracking();
   }
 
-  // DEMO ONLY: Simulation logic
-  // In production, replace this with:
-  //   StreamSubscription? _locationStream = FirebaseFirestore.instance
-  //     .collection('mechanics')
-  //     .doc(mechanicId)
-  //     .snapshots()
-  //     .listen((doc) { ... });
-  void _startSimulation() {
-    Future.delayed(const Duration(seconds: 4), () {
-      if (!mounted) return;
-      setState(() {
-        _dist = (_dist - 0.3).clamp(0.0, 999);
-        _eta = (_eta - 1).clamp(0, 999);
-        if (_dist <= 0.1) _status = TrackingStatus.arrived;
-      });
-      if (_status != TrackingStatus.arrived) _startSimulation();
-    });
+  @override
+  void dispose() {
+    _locationSubscription?.cancel();
+    super.dispose();
+  }
+
+  /// Start real-time location tracking using Firestore stream
+  void _startRealTimeTracking() {
+    _locationSubscription = _locationService
+        .streamRequestTrackingLocation(widget.requestId)
+        .listen(
+      (trackingLocation) async {
+        if (!mounted || trackingLocation == null) return;
+
+        setState(() {
+          _currentLocation = trackingLocation;
+          _isLoading = false;
+        });
+
+        // Calculate distance and ETA
+        final metrics = await _locationService.calculateMetrics(trackingLocation);
+
+        // Check if mechanic has arrived
+        final arrived = _locationService.hasArrived(trackingLocation);
+
+        if (!mounted) return;
+
+        setState(() {
+          _distanceKm = metrics.distanceKm;
+          _etaMinutes = metrics.etaMinutes;
+          _status = arrived ? TrackingStatus.arrived : TrackingStatus.onTheWay;
+        });
+      },
+      onError: (error) {
+        print('❌ Location tracking error: $error');
+        if (!mounted) return;
+        
+        setState(() {
+          _isLoading = false;
+        });
+      },
+    );
   }
 
   @override
@@ -92,13 +126,29 @@ class _LiveTrackingMapScreenState extends State<LiveTrackingMapScreen> {
             color: scheme.scrim.withOpacity(0.6),
             borderRadius: BorderRadius.circular(20),
           ),
-          child: Text(
-            l10n.liveTracking,
-            style: TextStyle(
-              color: scheme.onSurface,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_currentLocation?.isOnTheWay == true) ...[
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+              Text(
+                l10n.liveTracking,
+                style: TextStyle(
+                  color: scheme.onSurface,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -119,19 +169,33 @@ class _LiveTrackingMapScreenState extends State<LiveTrackingMapScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.map,
-                      size: 64,
-                      color: scheme.onSurface.withOpacity(0.16),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.fullScreenLiveMap,
-                      style: TextStyle(
-                        color: scheme.onSurface.withOpacity(0.24),
-                        fontSize: 15,
+                    if (_isLoading)
+                      CircularProgressIndicator(color: scheme.primary)
+                    else ...[
+                      Icon(
+                        Icons.map,
+                        size: 64,
+                        color: scheme.onSurface.withOpacity(0.16),
                       ),
-                    ),
+                      const SizedBox(height: 8),
+                      Text(
+                        l10n.fullScreenLiveMap,
+                        style: TextStyle(
+                          color: scheme.onSurface.withOpacity(0.24),
+                          fontSize: 15,
+                        ),
+                      ),
+                      if (_currentLocation?.isStale == true) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          'Location updated ${_currentLocation?.getTimeSinceUpdate()}',
+                          style: TextStyle(
+                            color: scheme.error,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ],
                   ],
                 ),
               ),
@@ -159,6 +223,7 @@ class _LiveTrackingMapScreenState extends State<LiveTrackingMapScreen> {
               color: scheme.primary,
               foreground: scheme.onPrimary,
               label: widget.mechanicName,
+              isOnline: _currentLocation?.isOnTheWay ?? false,
             ),
           ),
 
@@ -180,9 +245,11 @@ class _LiveTrackingMapScreenState extends State<LiveTrackingMapScreen> {
             right: 0,
             child: _BottomPanel(
               mechanicName: widget.mechanicName,
-              distanceKm: _dist,
-              etaMinutes: _eta,
+              distanceKm: _distanceKm,
+              etaMinutes: _etaMinutes,
               status: _status,
+              isOnline: _currentLocation?.isOnTheWay ?? false,
+              lastUpdated: _currentLocation?.getTimeSinceUpdate(),
             ),
           ),
         ],
@@ -199,12 +266,14 @@ class _MapPin extends StatelessWidget {
   final Color color;
   final Color foreground;
   final String label;
+  final bool isOnline;
   
   const _MapPin({
     required this.icon,
     required this.color,
     required this.foreground,
     required this.label,
+    this.isOnline = false,
   });
 
   @override
@@ -214,19 +283,39 @@ class _MapPin extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: color.withOpacity(0.45),
-                blurRadius: 8,
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withOpacity(0.45),
+                    blurRadius: 8,
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Icon(icon, size: 22, color: foreground),
+              child: Icon(icon, size: 22, color: foreground),
+            ),
+            // Online indicator
+            if (isOnline)
+              Positioned(
+                right: -2,
+                top: -2,
+                child: Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 4),
         Container(
@@ -288,12 +377,16 @@ class _BottomPanel extends StatelessWidget {
   final double distanceKm;
   final int etaMinutes;
   final TrackingStatus status;
+  final bool isOnline;
+  final String? lastUpdated;
   
   const _BottomPanel({
     required this.mechanicName,
     required this.distanceKm,
     required this.etaMinutes,
     required this.status,
+    required this.isOnline,
+    this.lastUpdated,
   });
 
   @override
@@ -360,38 +453,72 @@ class _BottomPanel extends StatelessWidget {
           // mechanic name row
           Row(
             children: [
-              CircleAvatar(
-                radius: 22,
-                backgroundColor: scheme.primary,
-                child: Text(
-                  mechanicName.isNotEmpty ? mechanicName[0] : 'M',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: scheme.onPrimary,
-                    fontWeight: FontWeight.bold,
+              Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 22,
+                    backgroundColor: scheme.primary,
+                    child: Text(
+                      mechanicName.isNotEmpty ? mechanicName[0] : 'M',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: scheme.onPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                ),
+                  // Online indicator
+                  if (isOnline)
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: Colors.green,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    mechanicName,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: scheme.onSurface,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      mechanicName,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: scheme.onSurface,
+                      ),
                     ),
-                  ),
-                  Text(
-                    arrived ? l10n.atYourLocation : l10n.onTheWayToYou,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: scheme.onSurface.withOpacity(0.6),
+                    Row(
+                      children: [
+                        Text(
+                          arrived ? l10n.atYourLocation : l10n.onTheWayToYou,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: scheme.onSurface.withOpacity(0.6),
+                          ),
+                        ),
+                        if (lastUpdated != null) ...[
+                          Text(
+                            ' • $lastUpdated',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: scheme.onSurface.withOpacity(0.5),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),

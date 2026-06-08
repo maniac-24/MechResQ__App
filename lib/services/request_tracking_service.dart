@@ -248,18 +248,79 @@ class RequestTrackingService {
   // REAL-TIME TRACKING
   // ═══════════════════════════════════════════
 
-  /// Start tracking a specific request
+  /// Stream tracking for a request.
+  /// Falls back to `requests` collection if no tracking doc exists yet.
   Stream<RequestTracking> trackRequest(String requestId) {
     return _firestore
         .collection('requestTracking')
         .doc(requestId)
         .snapshots()
-        .map((doc) {
-      if (!doc.exists) {
+        .asyncMap((doc) async {
+      if (doc.exists) {
+        return RequestTracking.fromFirestore(doc);
+      }
+
+      // Fallback: build a minimal tracking object from the requests collection
+      try {
+        final requestDoc = await _firestore
+            .collection('requests')
+            .doc(requestId)
+            .get();
+
+        if (!requestDoc.exists) {
+          throw Exception('Tracking not found');
+        }
+
+        final d = requestDoc.data() as Map<String, dynamic>;
+        final statusStr = (d['status'] ?? 'pending').toString();
+
+        // Auto-create the tracking document so future loads work
+        final tracking = RequestTracking(
+          requestId: requestId,
+          userId: d['userId'] ?? '',
+          status: _statusFromString(statusStr),
+          userLatitude: (d['userLat'] ?? 0.0).toDouble(),
+          userLongitude: (d['userLng'] ?? 0.0).toDouble(),
+          userAddress: d['locationAddress'] ?? d['location'],
+          mechanicId: d['mechanicId'],
+          mechanicName: d['mechanicName'],
+          mechanicPhone: d['mechanicPhone'],
+          mechanicVehicleNumber: d['mechanicVehicleNumber'],
+          createdAt: d['createdAt'] != null
+              ? (d['createdAt'] as Timestamp).toDate()
+              : DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+
+        // Persist so the stream works live from now on
+        await _firestore
+            .collection('requestTracking')
+            .doc(requestId)
+            .set(tracking.toMap());
+
+        return tracking;
+      } catch (e) {
         throw Exception('Tracking not found');
       }
-      return RequestTracking.fromFirestore(doc);
     });
+  }
+
+  RequestStatus _statusFromString(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':        return RequestStatus.pending;
+      case 'accepted':       return RequestStatus.accepted;
+      case 'mechanicenroute':
+      case 'mechanic_enroute': return RequestStatus.mechanicEnRoute;
+      case 'mechanicnearby':
+      case 'mechanic_nearby':  return RequestStatus.mechanicNearby;
+      case 'mechanicarrived':
+      case 'mechanic_arrived': return RequestStatus.mechanicArrived;
+      case 'workinprogress':
+      case 'work_in_progress': return RequestStatus.workInProgress;
+      case 'completed':      return RequestStatus.completed;
+      case 'cancelled':      return RequestStatus.cancelled;
+      default:               return RequestStatus.pending;
+    }
   }
 
   /// Start active tracking with notifications

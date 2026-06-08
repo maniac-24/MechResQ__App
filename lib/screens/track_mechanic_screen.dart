@@ -500,9 +500,10 @@ class _TrackMechanicScreenState extends State<TrackMechanicScreen> {
                               context,
                               MaterialPageRoute(
                                 builder: (_) => LiveTrackingMapScreen(
+                                  requestId: widget.requestId,
                                   mechanicName: mechanicName,
-                                  distanceKm: _distanceKm ?? 0,
-                                  etaMinutes: _parseEtaMinutes(_etaText),
+                                  initialDistanceKm: _distanceKm ?? 0,
+                                  initialEtaMinutes: _parseEtaMinutes(_etaText),
                                   status: _mapToTrackingStatus(status),
                                 ),
                               ),

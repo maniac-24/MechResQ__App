@@ -2807,4 +2807,341 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get generalVehicleRepairServices => 'General vehicle repair services.';
+
+  @override
+  String get billServiceEstimate => 'Service Estimate';
+
+  @override
+  String get billServiceBillPayment => 'Service Bill & Payment';
+
+  @override
+  String get billEstimateLabel => 'ESTIMATE';
+
+  @override
+  String get billBillLabel => 'BILL';
+
+  @override
+  String get billRequestDetails => 'Request Details';
+
+  @override
+  String get billVehicle => 'Vehicle';
+
+  @override
+  String get billIssue => 'Issue';
+
+  @override
+  String get billLocation => 'Location';
+
+  @override
+  String get billDistance => 'Distance';
+
+  @override
+  String get billComplexityPrefix => 'Complexity: ';
+
+  @override
+  String get billDetected => 'Detected: ';
+
+  @override
+  String get billPriceBreakdown => 'Price Breakdown';
+
+  @override
+  String get billBaseServiceCharge => 'Base Service Charge';
+
+  @override
+  String get billLabourCharges => 'Labour Charges';
+
+  @override
+  String get billCallOutFee => 'Call-Out / Travel Fee';
+
+  @override
+  String get billSpareParts => 'Spare Parts (Estimate)';
+
+  @override
+  String get billSparePartsNote => 'Actual cost adjusted after service';
+
+  @override
+  String get billPlatformFee => 'Platform Fee';
+
+  @override
+  String get billPlatformFeeNote => 'MechResQ service fee';
+
+  @override
+  String get billSubTotal => 'Sub-Total';
+
+  @override
+  String get billGst => 'GST (18%)';
+
+  @override
+  String get billGstNote => 'Goods and Services Tax';
+
+  @override
+  String get billTotalAmount => 'TOTAL AMOUNT';
+
+  @override
+  String get billEstimateNote =>
+      'This is an estimate. Final amount may vary based on actual spare parts used. GST @ 18% included.';
+
+  @override
+  String get billEstimatedTotal => 'Estimated Total';
+
+  @override
+  String get billEstimateInfoTitle => 'This is an estimated cost';
+
+  @override
+  String get billEstimateInfoBody =>
+      'The final amount will be confirmed by the mechanic after service. You will pay only after the service is completed.';
+
+  @override
+  String get billTrackingInfo =>
+      'Once a mechanic accepts, you can track them from My Requests → Active.';
+
+  @override
+  String get billPaymentAfterService =>
+      'Payment happens only after service is completed';
+
+  @override
+  String get billCancelRequest => 'Cancel Request';
+
+  @override
+  String get billKeepRequest => 'Keep Request';
+
+  @override
+  String get billYesCancel => 'Yes, Cancel';
+
+  @override
+  String get billCancelConfirmTitle => 'Cancel Request';
+
+  @override
+  String get billCancelConfirmBody =>
+      'Are you sure you want to cancel this request?\n\nThe mechanic will be notified and no charges will apply.';
+
+  @override
+  String get billRequestCancelledSuccess => 'Request cancelled successfully.';
+
+  @override
+  String get billCouldNotCancel => 'Could not cancel request. Try again.';
+
+  @override
+  String get billPayByCash => 'Pay by Cash';
+
+  @override
+  String get billPayDigitally => 'Pay Digitally';
+
+  @override
+  String get billProcessing => 'Processing…';
+
+  @override
+  String get billSecuredByRazorpay => 'Secured by Razorpay';
+
+  @override
+  String get billTestModeNote => '🧪 Test mode — no real charges';
+
+  @override
+  String get billCouldNotSavePayment =>
+      'Could not save your payment preference. Please try again.';
+
+  @override
+  String get billPaymentInitFailed => 'Payment initiation failed. Try again.';
+
+  @override
+  String get billCashPaymentSelected => 'Cash Payment Selected';
+
+  @override
+  String get billCashAmountDue => 'Amount due: ';
+
+  @override
+  String get billCashInstruction =>
+      'Please pay the mechanic in cash when the service is complete.\n\nYour receipt will be generated once the mechanic confirms payment.';
+
+  @override
+  String get billGotIt => 'Got it';
+
+  @override
+  String get receiptTitle => 'Receipt';
+
+  @override
+  String get receiptServiceDetails => 'Service Details';
+
+  @override
+  String get receiptItemisedCharges => 'Itemised Charges';
+
+  @override
+  String get receiptPaymentInformation => 'Payment Information';
+
+  @override
+  String get receiptPaymentMethod => 'Method';
+
+  @override
+  String get receiptPaymentStatus => 'Status';
+
+  @override
+  String get receiptTransactionId => 'Transaction ID';
+
+  @override
+  String get receiptReceiptId => 'Receipt ID';
+
+  @override
+  String get receiptPaidOn => 'Paid On';
+
+  @override
+  String get receiptIssue => 'Issue';
+
+  @override
+  String get receiptVehicle => 'Vehicle';
+
+  @override
+  String get receiptLocation => 'Location';
+
+  @override
+  String get receiptMechanic => 'Mechanic';
+
+  @override
+  String get receiptComplexity => 'Complexity';
+
+  @override
+  String get receiptCustomerId => 'Customer ID';
+
+  @override
+  String get receiptSubTotal => 'Sub-Total';
+
+  @override
+  String get receiptGst => 'GST (18%)';
+
+  @override
+  String get receiptTotalAmount => 'TOTAL AMOUNT';
+
+  @override
+  String get receiptBaseCharge => 'Base Service Charge';
+
+  @override
+  String get receiptLabour => 'Labour';
+
+  @override
+  String get receiptCallOut => 'Call-Out / Travel Fee';
+
+  @override
+  String get receiptSpareParts => 'Spare Parts';
+
+  @override
+  String get receiptPlatformFee => 'Platform Fee';
+
+  @override
+  String get receiptPaid => '✓  PAID';
+
+  @override
+  String get receiptPending => '⏳  PAYMENT PENDING';
+
+  @override
+  String get receiptGstNote =>
+      'This receipt is an estimate. Final charges may vary based on actual spare parts used. GST @ 18% is included in the total amount. For disputes contact support@mechresq.com';
+
+  @override
+  String get receiptThankYou => 'Thank you for choosing MechResQ!';
+
+  @override
+  String get receiptTagline =>
+      'Drive safe. We\'re always here when you need us.';
+
+  @override
+  String get receiptDownloadPdf => 'Download PDF';
+
+  @override
+  String get receiptGenerating => 'Generating…';
+
+  @override
+  String get receiptPrintPreview => 'Print / Preview';
+
+  @override
+  String get receiptNotFound => 'Receipt not found.';
+
+  @override
+  String get receiptLoadFailed => 'Failed to load receipt. Please try again.';
+
+  @override
+  String get receiptPdfError => 'Could not generate PDF. Please try again.';
+
+  @override
+  String get receiptViewDownload => 'View & Download Receipt';
+
+  @override
+  String get receiptViewReceipt => 'View Receipt';
+
+  @override
+  String get receiptDigitalMethod => 'Digital (Razorpay)';
+
+  @override
+  String get receiptSuccessTitle => 'Payment Successful';
+
+  @override
+  String get receiptSuccessPaymentId => 'Payment ID';
+
+  @override
+  String get receiptSuccessRequestId => 'Request ID';
+
+  @override
+  String get receiptSuccessVehicle => 'Vehicle';
+
+  @override
+  String get receiptSuccessMethod => 'Method';
+
+  @override
+  String get receiptSuccessReceiptId => 'Receipt ID';
+
+  @override
+  String get receiptSuccessViewDownload => 'View & Download Receipt';
+
+  @override
+  String get historyDeleteRequest => 'Delete Request';
+
+  @override
+  String get historyDeleteConfirm =>
+      'Delete this request from history? This cannot be undone.';
+
+  @override
+  String get historyDeleteSuccess => 'Request deleted.';
+
+  @override
+  String get historyDeleteError => 'Could not delete: ';
+
+  @override
+  String get historyDeleteAll => 'Delete All History';
+
+  @override
+  String get historyDeleteAllConfirm =>
+      'Delete all completed and cancelled requests? Cannot be undone.';
+
+  @override
+  String get historyDeleteAllButton => 'Delete All';
+
+  @override
+  String historyDeleteAllSuccess(int count) {
+    return 'Deleted $count item(s).';
+  }
+
+  @override
+  String get historyViewBillPay => 'View Bill & Pay';
+
+  @override
+  String get historyServiceCompleted =>
+      'Service completed. View your bill and pay.';
+
+  @override
+  String get historyCashPending =>
+      'Cash payment pending. Pay mechanic when service is done.';
+
+  @override
+  String get historyWaitingMechanic => 'Waiting for a mechanic...';
+
+  @override
+  String get historyViewEstimateCancel => 'View Estimate & Cancel';
+
+  @override
+  String get historyTrackOnMap => 'Track on Map';
+
+  @override
+  String get historyPaymentPendingBill =>
+      'Service completed. View your bill and pay.';
+
+  @override
+  String get historyKeepRequest => 'Keep Request';
 }

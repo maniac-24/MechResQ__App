@@ -1,4 +1,4 @@
-// lib/screens/create_request_screen.dart
+﻿// lib/screens/create_request_screen.dart
 
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -10,6 +10,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 
 import '../services/request_firestore_service.dart';
+import '../services/request_tracking_service.dart';
 import '../utils/location_permission_utils.dart';
 import '../utils/snackbar_helper.dart';
 import '../widgets/map_location_picker.dart';
@@ -99,7 +100,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                 child: Text(
                   l10n.neededToAttachPhotos,
                   style: TextStyle(
-                    color: scheme.onSurface.withOpacity(0.6),
+                    color: scheme.onSurface.withValues(alpha: 0.6),
                     fontSize: 14,
                   ),
                   textAlign: TextAlign.center,
@@ -493,6 +494,22 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
         locationAddress: _detectedAddress,
       );
 
+      // Create tracking document immediately so Track screen works
+      try {
+        final uid = _requestService.currentUserId;
+        if (uid != null && _userLat != null && _userLng != null) {
+          await RequestTrackingService().createTracking(
+            requestId: requestId,
+            userId: uid,
+            userLatitude: _userLat!,
+            userLongitude: _userLng!,
+            userAddress: _detectedAddress,
+          );
+        }
+      } catch (_) {
+        // Non-fatal — trackRequest() will auto-create as fallback
+      }
+
       // Clear form (optional)
       if (mounted) {
         setState(() {
@@ -505,13 +522,19 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
         });
       }
 
-      // Navigate to success screen, passing a small summary
+      // Navigate to bill screen instead of generic success screen
       if (mounted) {
-        Navigator.pushNamed(context, '/request_success', arguments: {
-          'vehicle': _selectedVehicle,
-          'summary': issueText,
-          'requestId': requestId,
-        });
+        Navigator.pushReplacementNamed(
+          context,
+          '/bill',
+          arguments: {
+            'requestId': requestId,
+            'vehicle': _selectedVehicle,
+            'issue': issueText,
+            'location': _detectedAddress ?? '',
+            'distanceKm': 5.0, // default; replaced by real mechanic distance later
+          },
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -571,7 +594,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                   Text(
                     name,
                     style: TextStyle(
-                      color: scheme.onSurface.withOpacity(0.7),
+                      color: scheme.onSurface.withValues(alpha: 0.7),
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -586,20 +609,20 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                       Text(
                         rating,
                         style: TextStyle(
-                          color: scheme.onSurface.withOpacity(0.7),
+                          color: scheme.onSurface.withValues(alpha: 0.7),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Icon(
                         Icons.place,
                         size: 14,
-                        color: scheme.onSurface.withOpacity(0.7),
+                        color: scheme.onSurface.withValues(alpha: 0.7),
                       ),
                       const SizedBox(width: 6),
                       Text(
                         '$distance km',
                         style: TextStyle(
-                          color: scheme.onSurface.withOpacity(0.7),
+                          color: scheme.onSurface.withValues(alpha: 0.7),
                         ),
                       ),
                     ],
@@ -620,7 +643,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
     if (_attachedFiles.isEmpty) {
       return Text(
         l10n.noPhotosAttached,
-        style: TextStyle(color: scheme.onSurface.withOpacity(0.7)),
+        style: TextStyle(color: scheme.onSurface.withValues(alpha: 0.7)),
       );
     }
     return Wrap(
@@ -726,7 +749,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                     Text(
                       l10n.provideDetailsQuickly,
                       style: TextStyle(
-                        color: scheme.onSurface.withOpacity(0.7),
+                        color: scheme.onSurface.withValues(alpha: 0.7),
                       ),
                     ),
                     const SizedBox(height: 14),
@@ -768,7 +791,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                       decoration: InputDecoration(
                         hintText: l10n.describeIssuePlaceholder,
                         hintStyle: TextStyle(
-                          color: scheme.onSurface.withOpacity(0.6),
+                          color: scheme.onSurface.withValues(alpha: 0.6),
                         ),
                         filled: true,
                         fillColor: scheme.surfaceContainerLowest,
@@ -862,12 +885,12 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                         decoration: InputDecoration(
                           prefixIcon: Icon(
                             Icons.location_on,
-                            color: scheme.onSurface.withOpacity(0.7),
+                            color: scheme.onSurface.withValues(alpha: 0.7),
                           ),
                           border: const OutlineInputBorder(),
                           hintText: _detectedAddress,
                           hintStyle: TextStyle(
-                            color: scheme.onSurface.withOpacity(0.7),
+                            color: scheme.onSurface.withValues(alpha: 0.7),
                           ),
                           filled: true,
                           fillColor: scheme.surfaceContainerLowest,
@@ -878,7 +901,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                       Text(
                         l10n.locationNotDetectedTap,
                         style: TextStyle(
-                          color: scheme.onSurface.withOpacity(0.7),
+                          color: scheme.onSurface.withValues(alpha: 0.7),
                         ),
                       ),
                     const SizedBox(height: 18),
@@ -913,7 +936,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                       child: Text(
                         l10n.tipProvideDescription,
                         style: TextStyle(
-                          color: scheme.onSurface.withOpacity(0.7),
+                          color: scheme.onSurface.withValues(alpha: 0.7),
                         ),
                       ),
                     ),
