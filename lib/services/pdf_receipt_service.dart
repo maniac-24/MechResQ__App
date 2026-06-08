@@ -267,7 +267,7 @@ class PdfReceiptService {
   static pw.TableRow _tr(String label, double amount) => pw.TableRow(
         children: [
           _td(label),
-          _td(BillingService.formatAmount(amount), right: true),
+          _td(BillingService.formatAmountPdf(amount), right: true),
         ],
       );
 
@@ -311,7 +311,7 @@ class PdfReceiptService {
                     font: pw.Font.helveticaBold(),
                     fontSize: 12,
                     color: _darkGrey)),
-            pw.Text(BillingService.formatAmount(r.totalAmount),
+            pw.Text(BillingService.formatAmountPdf(r.totalAmount),
                 style: pw.TextStyle(
                     font: pw.Font.helveticaBold(),
                     fontSize: 15,
@@ -328,7 +328,7 @@ class PdfReceiptService {
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
       children: [
         pw.Text(label, style: pw.TextStyle(fontSize: 9, color: color)),
-        pw.Text(BillingService.formatAmount(amount),
+        pw.Text(BillingService.formatAmountPdf(amount),
             style: pw.TextStyle(
                 font: pw.Font.helveticaBold(), fontSize: 9, color: color)),
       ],

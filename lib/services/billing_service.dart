@@ -305,9 +305,13 @@ class BillingService {
   // DISPLAY HELPERS
   // ─────────────────────────────────────────
 
-  /// Format a rupee amount for display
+  /// Format a rupee amount for display in UI
   static String formatAmount(double amount) =>
-      '₹${amount.toStringAsFixed(2)}';
+      '\u20B9${amount.toStringAsFixed(2)}';
+
+  /// Format a rupee amount for PDF (Helvetica font doesn't support rupee symbol)
+  static String formatAmountPdf(double amount) =>
+      'Rs. ${amount.toStringAsFixed(2)}';
 
   /// Complexity badge colour
   static ({String label, int colorValue}) complexityBadge(String complexity) {

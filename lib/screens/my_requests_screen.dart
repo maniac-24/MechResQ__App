@@ -493,196 +493,217 @@ class _MyRequestsScreenState extends State<MyRequestsScreen>
     final status = chip.parseRequestStatus(statusString);
     final createdAt = r['createdAt'] as DateTime?;
     final isCompleted = statusString.toLowerCase() == 'completed';
+    final isCancelled = statusString.toLowerCase() == 'cancelled';
 
-    return Card(
-      color: scheme.surfaceContainerHighest,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Column(children: [
-        // ── Header row ───────────────────────────────────────
-        Padding(
-          padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Avatar
-              CircleAvatar(
-                radius: 22,
-                backgroundColor: scheme.primary,
-                child: Text(
-                  vehicleType.isNotEmpty ? vehicleType[0].toUpperCase() : 'R',
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: scheme.onPrimary,
-                      fontSize: 16),
-                ),
-              ),
-              const SizedBox(width: 12),
+    return FutureBuilder<ServiceReceipt?>(
+      // Fetch receipt for ALL history cards (not just completed)
+      // so we can control delete button visibility
+      future: isCompleted ? _fetchReceipt(requestId) : Future.value(null),
+      builder: (context, receiptSnap) {
+        final receipt = receiptSnap.data;
+        final isPaid = receipt?.isPaid ?? false;
 
-              // Title + subtitle
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      issue.length > 50
-                          ? '${issue.substring(0, 50)}...'
-                          : issue,
+        // Delete is allowed only if:
+        //   - Request is cancelled (no payment involved)
+        //   - Request is completed AND payment is done
+        final canDelete = isCancelled || (isCompleted && isPaid);
+
+        return Card(
+          color: scheme.surfaceContainerHighest,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Column(children: [
+            // ── Header row ───────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Avatar
+                  CircleAvatar(
+                    radius: 22,
+                    backgroundColor: scheme.primary,
+                    child: Text(
+                      vehicleType.isNotEmpty ? vehicleType[0].toUpperCase() : 'R',
                       style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: scheme.onSurface,
-                          fontSize: 15),
+                          color: scheme.onPrimary,
+                          fontSize: 16),
                     ),
-                    const SizedBox(height: 3),
-                    Text('${l10n.vehicle}: $vehicleType',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color:
-                                scheme.onSurface.withValues(alpha: 0.7))),
-                    if (createdAt != null) ...[
-                      const SizedBox(height: 2),
-                      Text(_formatDate(createdAt),
-                          style: TextStyle(
-                              fontSize: 11,
-                              color: scheme.onSurface
-                                  .withValues(alpha: 0.4))),
-                    ],
-                  ],
-                ),
-              ),
+                  ),
+                  const SizedBox(width: 12),
 
-              // Status chip + DELETE button stacked vertically
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  chip.RequestStatusChip(status: status),
-                  const SizedBox(height: 6),
-                  // ── DELETE BUTTON ──────────────────────
-                  GestureDetector(
-                    onTap: () => _deleteRequest(requestId),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade50,
-                        border: Border.all(color: Colors.red.shade300),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.delete_outline,
-                              size: 14, color: Colors.red.shade700),
-                          const SizedBox(width: 3),
-                          Text(l10n.delete,
+                  // Title + subtitle
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          issue.length > 50
+                              ? '${issue.substring(0, 50)}...'
+                              : issue,
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: scheme.onSurface,
+                              fontSize: 15),
+                        ),
+                        const SizedBox(height: 3),
+                        Text('${l10n.vehicle}: $vehicleType',
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: scheme.onSurface.withValues(alpha: 0.7))),
+                        if (createdAt != null) ...[
+                          const SizedBox(height: 2),
+                          Text(_formatDate(createdAt),
                               style: TextStyle(
                                   fontSize: 11,
-                                  color: Colors.red.shade700,
-                                  fontWeight: FontWeight.w600)),
+                                  color: scheme.onSurface.withValues(alpha: 0.4))),
                         ],
-                      ),
+                      ],
                     ),
+                  ),
+
+                  // Status chip + DELETE button
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      chip.RequestStatusChip(status: status),
+                      const SizedBox(height: 6),
+
+                      // DELETE BUTTON — enabled only after payment
+                      canDelete
+                          ? GestureDetector(
+                              onTap: () => _deleteRequest(requestId),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.shade50,
+                                  border: Border.all(color: Colors.red.shade300),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.delete_outline,
+                                        size: 14, color: Colors.red.shade700),
+                                    const SizedBox(width: 3),
+                                    Text(l10n.delete,
+                                        style: TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.red.shade700,
+                                            fontWeight: FontWeight.w600)),
+                                  ],
+                                ),
+                              ),
+                            )
+                          : Tooltip(
+                              message: 'Pay first to enable delete',
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: scheme.onSurface.withValues(alpha: 0.05),
+                                  border: Border.all(
+                                      color: scheme.onSurface.withValues(alpha: 0.15)),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.delete_outline,
+                                        size: 14,
+                                        color: scheme.onSurface.withValues(alpha: 0.3)),
+                                    const SizedBox(width: 3),
+                                    Text(l10n.delete,
+                                        style: TextStyle(
+                                            fontSize: 11,
+                                            color: scheme.onSurface.withValues(alpha: 0.3),
+                                            fontWeight: FontWeight.w600)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
-        ),
+            ),
 
-        // ── Receipt / payment section (completed only) ───────
-        if (isCompleted) ...[
-          const Divider(height: 1),
-          FutureBuilder<ServiceReceipt?>(
-            future: _fetchReceipt(requestId),
-            builder: (context, snap) {
-              if (snap.connectionState == ConnectionState.waiting) {
-                return const Padding(
+            // ── Receipt / payment section (completed only) ───────
+            if (isCompleted) ...[
+              const Divider(height: 1),
+              // Reuse already-fetched receipt data
+              if (receiptSnap.connectionState == ConnectionState.waiting)
+                const Padding(
                   padding: EdgeInsets.all(12),
                   child: Center(
                       child: SizedBox(
                           width: 20,
                           height: 20,
-                          child:
-                              CircularProgressIndicator(strokeWidth: 2))),
-                );
-              }
-
-              final receipt = snap.data;
-
-              // ── No receipt yet: show View Bill + Pay options
-              if (receipt == null) {
-                return Padding(
+                          child: CircularProgressIndicator(strokeWidth: 2))),
+                )
+              else if (receipt == null)
+                // No receipt → show View Bill & Pay
+                Padding(
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-                  child: Column(
-                    children: [
-                      // Info banner
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 8, horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.blue.shade200),
-                        ),
-                        child: Row(children: [
-                          Icon(Icons.info_outline,
-                              color: Colors.blue.shade700, size: 16),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              l10n.historyServiceCompleted,
-                              style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.blue.shade800),
-                            ),
-                          ),
-                        ]),
+                  child: Column(children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 8, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.blue.shade200),
                       ),
-                      const SizedBox(height: 8),
-                      // View Bill & Pay button
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => BillScreen(
-                                requestId: requestId,
-                                vehicleType: vehicleType,
-                                issueDescription: issue,
-                                serviceLocation:
-                                    r['locationAddress'] ??
-                                        r['location'] ??
-                                        '',
-                                mode: BillMode.payment,
-                              ),
-                            ),
-                          ),
-                          icon: const Icon(Icons.receipt_outlined),
-                          label: Text(l10n.historyViewBillPay,
-                              style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                const Color(0xFFFF6B35),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 12),
-                            shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(10)),
+                      child: Row(children: [
+                        Icon(Icons.info_outline,
+                            color: Colors.blue.shade700, size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            l10n.historyServiceCompleted,
+                            style: TextStyle(
+                                fontSize: 12, color: Colors.blue.shade800),
                           ),
                         ),
+                      ]),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => BillScreen(
+                              requestId: requestId,
+                              vehicleType: vehicleType,
+                              issueDescription: issue,
+                              serviceLocation:
+                                  r['locationAddress'] ?? r['location'] ?? '',
+                              mode: BillMode.payment,
+                            ),
+                          ),
+                        ),
+                        icon: const Icon(Icons.receipt_outlined),
+                        label: Text(l10n.historyViewBillPay,
+                            style: const TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFF6B35),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                        ),
                       ),
-                    ],
-                  ),
-                );
-              }
-
-              // ── Receipt exists but payment pending (cash)
-              if (!receipt.isPaid) {
-                return Padding(
+                    ),
+                  ]),
+                )
+              else if (!receipt.isPaid)
+                // Receipt exists, cash pending
+                Padding(
                   padding: const EdgeInsets.all(12),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -690,8 +711,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen>
                     decoration: BoxDecoration(
                       color: Colors.orange.shade50,
                       borderRadius: BorderRadius.circular(8),
-                      border:
-                          Border.all(color: Colors.orange.shade300),
+                      border: Border.all(color: Colors.orange.shade300),
                     ),
                     child: Row(children: [
                       Icon(Icons.payments_outlined,
@@ -701,48 +721,44 @@ class _MyRequestsScreenState extends State<MyRequestsScreen>
                         child: Text(
                           l10n.historyCashPending,
                           style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.orange.shade800),
+                              fontSize: 12, color: Colors.orange.shade800),
                         ),
                       ),
                     ]),
                   ),
-                );
-              }
-
-              // ── Receipt exists and is PAID → show View Receipt
-              return Padding(
-                padding: const EdgeInsets.all(12),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ReceiptDetailScreen(
-                            requestId: requestId),
+                )
+              else
+                // Paid — show View Receipt
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              ReceiptDetailScreen(requestId: requestId),
+                        ),
                       ),
-                    ),
-                    icon: const Icon(Icons.receipt_long),
-                    label: Text(l10n.receiptViewReceipt,
-                        style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.teal,
-                      foregroundColor: Colors.white,
-                      padding:
-                          const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                      icon: const Icon(Icons.receipt_long),
+                      label: Text(l10n.receiptViewReceipt,
+                          style: const TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.teal,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
                     ),
                   ),
                 ),
-              );
-            },
-          ),
-        ],
-      ]),
+            ],
+          ]),
+        );
+      },
     );
   }
 }

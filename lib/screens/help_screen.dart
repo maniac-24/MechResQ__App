@@ -288,11 +288,30 @@ class HelpScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              onPressed: () {
-                SnackBarHelper.showInfo(
-                  context,
-                  l10n.openingSupportTicket,
+              onPressed: () async {
+                final Uri emailUri = Uri(
+                  scheme: 'mailto',
+                  path: 'support@mechresq.com',
+                  queryParameters: {
+                    'subject': 'MechResQ Support Ticket',
+                    'body':
+                        'Name: \n'
+                        'Phone Number: \n'
+                        'Issue Type: (e.g. Payment / App issue / Request issue / Other)\n'
+                        'Description: \n\n'
+                        'Please describe your issue in detail below:\n\n',
+                  },
                 );
+                if (await canLaunchUrl(emailUri)) {
+                  await launchUrl(emailUri);
+                } else {
+                  if (context.mounted) {
+                    SnackBarHelper.showError(
+                      context,
+                      'Could not open email app. Please email support@mechresq.com directly.',
+                    );
+                  }
+                }
               },
               icon: const Icon(Icons.support_agent),
               label: Text(
