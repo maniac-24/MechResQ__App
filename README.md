@@ -53,7 +53,7 @@
 - **Receipt View** - View Receipt button after payment; accessible from History tab indefinitely
 
 ### User Management
-- **Multi-auth Support** - Email/Password and Google Sign-In
+- **Phone OTP Authentication** - Login via mobile number with SMS OTP verification
 - **Profile Management** - Complete user profile with personal and vehicle information
 - **Vehicle Management** - Add and manage multiple vehicles
 - **Emergency Contacts** - Store and manage emergency contact information
@@ -104,7 +104,7 @@ lib/
 - **Provider** - State management solution
 
 ### Backend and Services
-- **Firebase Authentication** - User authentication (Email, Google)
+- **Firebase Authentication** - Phone number authentication with SMS OTP
 - **Cloud Firestore** - Real-time NoSQL database
 - **Firebase Storage** - Image and file storage
 - **Firebase Cloud Messaging** - Push notifications
@@ -330,7 +330,7 @@ MechResQ supports multi-language internationalization.
 
 ### 3. Enable Firebase Services
 
-- Authentication: Email/Password and Google Sign-In
+- Authentication: Phone Number with SMS OTP
 - Cloud Firestore: Create database
 - Cloud Storage: Create storage bucket
 - Cloud Messaging: Enable for push notifications
@@ -507,9 +507,9 @@ flutter clean && flutter pub get
 - Helpful/not-helpful vote system
 
 ### AuthService (`auth_service.dart`)
-- Email/Password registration and login
-- Google Sign-In
-- Password reset and session management
+- Phone number registration and login via SMS OTP
+- OTP verification and session management
+- Profile setup after first login
 
 ---
 
