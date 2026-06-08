@@ -260,7 +260,7 @@ class _RequestCompletionScreenState extends State<RequestCompletionScreen>
             TextButton(
               onPressed: () {
                 if (!context.mounted) return;
-                Navigator.popUntil(context, (route) => !route.canPop);
+                Navigator.popUntil(context, (route) => route.isFirst);
               },
               child: Text(
                 l10n.skipForNow,
@@ -288,7 +288,7 @@ class _RequestCompletionScreenState extends State<RequestCompletionScreen>
     // navigate back to home / request list
     Future.delayed(const Duration(milliseconds: 600), () {
       if (!mounted) return;
-      Navigator.popUntil(context, (route) => !route.canPop);
+      Navigator.popUntil(context, (route) => route.isFirst);
     });
   }
 
