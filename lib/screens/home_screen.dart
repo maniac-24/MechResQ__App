@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'dart:ui' as ui;
+import 'dart:typed_data';
 import '../l10n/app_localizations.dart';
 
 import '../services/mechanic_firestore_service.dart';
 import '../services/auth_service.dart';
 import '../services/notification_service.dart';
 import '../services/location_service.dart';
+import '../services/nearby_places_service.dart';
 import '../widgets/mechanic_card.dart';
 import '../screens/help_screen.dart';
 import 'mechanic_detail_screen.dart';
@@ -38,6 +41,13 @@ class _MechanicListScreenState extends State<MechanicListScreen> {
   bool _showVehicleAddForm = false;
   String? _currentLocationAddress; // Store current location address
 
+  // Map state
+  GoogleMapController? _mapController;
+  LatLng? _userLatLng;
+  BitmapDescriptor? _servicePinIcon;
+  Set<Marker> _nearbyMarkers = {};
+  bool _loadingPlaces = false;
+
   // filter state
   int? _expYears;
   List<String> _selectedVehicleTypes = [];
@@ -65,12 +75,116 @@ class _MechanicListScreenState extends State<MechanicListScreen> {
         });
       }
     } catch (e) {
-      print('Error loading location: $e');
       if (mounted) {
         setState(() {
           _currentLocationAddress = 'Location unavailable';
         });
       }
+    }
+    // After getting location, fetch nearby places and build custom marker
+    await _initMapFeatures();
+  }
+
+  /// Initialize map: custom marker icon + nearby places
+  Future<void> _initMapFeatures() async {
+    final position = await _locationService.getCurrentLocation();
+    if (position == null || !mounted) return;
+
+    final latLng = LatLng(position.latitude, position.longitude);
+    setState(() => _userLatLng = latLng);
+
+    // Build custom "Service Point" marker icon
+    final icon = await _buildServicePinIcon();
+    if (mounted) setState(() => _servicePinIcon = icon);
+
+    // Fetch nearby places
+    if (!_loadingPlaces) {
+      setState(() => _loadingPlaces = true);
+      try {
+        final places = await NearbyPlacesService.fetchAll(
+          lat: position.latitude,
+          lng: position.longitude,
+          radiusMeters: 1000,
+        );
+        if (!mounted) return;
+        final markers = <Marker>{};
+        for (final place in places) {
+          final icon = _categoryIcon(place.category);
+          markers.add(Marker(
+            markerId: MarkerId(place.placeId),
+            position: LatLng(place.lat, place.lng),
+            icon: icon,
+            infoWindow: InfoWindow(
+              title: place.name,
+              snippet: _categoryLabel(place.category) +
+                  (place.rating != null ? ' • ${place.rating!.toStringAsFixed(1)} stars' : ''),
+            ),
+          ));
+        }
+        setState(() {
+          _nearbyMarkers = markers;
+          _loadingPlaces = false;
+        });
+      } catch (e) {
+        if (mounted) setState(() => _loadingPlaces = false);
+      }
+    }
+  }
+
+  /// Build a custom circular green "Service Point" pin icon
+  Future<BitmapDescriptor> _buildServicePinIcon() async {
+    const size = 80.0;
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+
+    // Outer glow ring
+    final glowPaint = Paint()
+      ..color = const Color(0x4400C853)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(const Offset(size / 2, size / 2), size / 2, glowPaint);
+
+    // White border ring
+    final borderPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(const Offset(size / 2, size / 2), size / 2.5, borderPaint);
+
+    // Green fill
+    final fillPaint = Paint()
+      ..color = const Color(0xFF00C853)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(const Offset(size / 2, size / 2), size / 3.3, fillPaint);
+
+    final picture = recorder.endRecording();
+    final img = await picture.toImage(size.toInt(), size.toInt());
+    final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
+    final bytes = byteData!.buffer.asUint8List();
+    return BitmapDescriptor.fromBytes(bytes);
+  }
+
+  BitmapDescriptor _categoryIcon(PlaceCategory category) {
+    switch (category) {
+      case PlaceCategory.petrolBunk:
+        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange);
+      case PlaceCategory.towingService:
+        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet);
+      case PlaceCategory.carWash:
+        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan);
+      case PlaceCategory.sparePartShop:
+        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow);
+      case PlaceCategory.autoWorkshop:
+      default:
+        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
+    }
+  }
+
+  String _categoryLabel(PlaceCategory category) {
+    switch (category) {
+      case PlaceCategory.petrolBunk:     return 'Petrol Bunk';
+      case PlaceCategory.towingService:  return 'Towing Service';
+      case PlaceCategory.carWash:        return 'Car Wash';
+      case PlaceCategory.sparePartShop:  return 'Spare Parts';
+      case PlaceCategory.autoWorkshop:   return 'Auto Workshop';
     }
   }
 
@@ -628,58 +742,170 @@ class _MechanicListScreenState extends State<MechanicListScreen> {
     );
   }
 
-  /// Build map view showing current location and nearby mechanics
+  /// Build map view showing current location (Service Point) and nearby places
   Widget _buildMapView() {
-    return FutureBuilder<LatLng?>(
-      future: _getCurrentPosition(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return Container(
-            color: Colors.grey.shade200,
-            child: const Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
+    final scheme = Theme.of(context).colorScheme;
 
-        final currentPosition = snapshot.data!;
+    if (_userLatLng == null) {
+      return Container(
+        color: Colors.grey.shade200,
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
-        return GoogleMap(
+    // Build all markers: nearby places + Service Point for user location
+    final allMarkers = <Marker>{
+      ..._nearbyMarkers,
+      // Custom "Service Point" marker at user location
+      Marker(
+        markerId: const MarkerId('service_point'),
+        position: _userLatLng!,
+        icon: _servicePinIcon ?? BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueGreen),
+        infoWindow: const InfoWindow(
+          title: 'Service Point',
+          snippet: 'Your current location',
+        ),
+        zIndex: 10,
+      ),
+    };
+
+    return Stack(
+      children: [
+        GoogleMap(
           initialCameraPosition: CameraPosition(
-            target: currentPosition,
-            zoom: 14,
+            target: _userLatLng!,
+            zoom: 15,
           ),
-          myLocationEnabled: true,
-          myLocationButtonEnabled: true,
-          zoomControlsEnabled: true, // Enable zoom controls
-          zoomGesturesEnabled: true, // Enable pinch to zoom
-          scrollGesturesEnabled: true, // Enable pan gestures
-          rotateGesturesEnabled: true, // Enable rotation
-          tiltGesturesEnabled: true, // Enable tilt
+          myLocationEnabled: false, // Disabled — using custom Service Point marker
+          myLocationButtonEnabled: false,
+          zoomControlsEnabled: false,
+          scrollGesturesEnabled: true,
+          rotateGesturesEnabled: true,
+          tiltGesturesEnabled: true,
           mapToolbarEnabled: false,
-          padding: const EdgeInsets.only(bottom: 100), // Padding for bottom sheet
-          markers: {
-            // Current location marker is handled by myLocationEnabled
-          },
+          padding: const EdgeInsets.only(bottom: 100),
+          markers: allMarkers,
           onMapCreated: (controller) {
-            // Map created
+            _mapController = controller;
           },
-        );
-      },
+        ),
+
+        // "Service Point" label above the custom marker (Rapido-style)
+        // Positioned at center of map viewport
+        Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00C853),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: const Text(
+                  'Service Point',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              // Pointer triangle
+              CustomPaint(
+                size: const Size(16, 8),
+                painter: _TrianglePainter(color: const Color(0xFF00C853)),
+              ),
+            ],
+          ),
+        ),
+
+        // Map legend (top-right)
+        Positioned(
+          top: 12,
+          right: 12,
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: scheme.surface.withValues(alpha: 0.92),
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 6,
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _legendItem(Colors.red, 'Auto Workshop'),
+                _legendItem(Colors.orange, 'Petrol Bunk'),
+                _legendItem(Colors.purple, 'Towing'),
+                _legendItem(Colors.cyan, 'Car Wash'),
+                _legendItem(const Color(0xFF00C853), 'Service Point'),
+              ],
+            ),
+          ),
+        ),
+
+        // Loading indicator for places
+        if (_loadingPlaces)
+          Positioned(
+            top: 12,
+            left: 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: scheme.surface.withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: scheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  const Text('Finding nearby...', style: TextStyle(fontSize: 11)),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 
-  /// Get current GPS position
-  Future<LatLng?> _getCurrentPosition() async {
-    try {
-      final position = await _locationService.getCurrentLocation();
-      if (position == null) return null;
-      return LatLng(position.latitude, position.longitude);
-    } catch (e) {
-      print('Error getting position: $e');
-      // Default to a fallback location
-      return const LatLng(37.7749, -122.4194); // San Francisco
-    }
+  Widget _legendItem(Color color, String label) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Text(label, style: const TextStyle(fontSize: 10)),
+        ],
+      ),
+    );
   }
 
   /// Build mechanics stream list (extracted for reuse)
@@ -1411,4 +1637,26 @@ class _MechanicListScreenState extends State<MechanicListScreen> {
       ),
     );
   }
+}
+
+// Triangle pointer for "Service Point" label
+class _TrianglePainter extends CustomPainter {
+  final Color color;
+  const _TrianglePainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+    final path = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width / 2, size.height)
+      ..close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_TrianglePainter oldDelegate) => color != oldDelegate.color;
 }

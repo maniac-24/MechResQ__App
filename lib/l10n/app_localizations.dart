@@ -2303,7 +2303,7 @@ abstract class AppLocalizations {
   /// No description provided for @safetyTips.
   ///
   /// In en, this message translates to:
-  /// **'â€¢ If stranded in an unsafe location, stay inside your vehicle with doors locked\nâ€¢ Turn on hazard lights and use warning triangles if available\nâ€¢ Use the SOS Call feature for immediate emergency assistance\nâ€¢ Never share OTPs, passwords, or banking details with anyone\nâ€¢ Verify mechanic ID and rating before accepting service\nâ€¢ All payments should be done through the app only\nâ€¢ Take photos of damage before and after repair\nâ€¢ Keep emergency numbers saved in your phone'**
+  /// **'If stranded in an unsafe location, stay inside your vehicle with doors locked\n\nTurn on hazard lights and use warning triangles if available\n\nUse the SOS Call feature for immediate emergency assistance\n\nNever share OTPs, passwords, or banking details with anyone\n\nVerify mechanic ID and rating before accepting service\n\nAll payments should be done through the app only\n\nTake photos of damage before and after repair\n\nKeep emergency numbers saved in your phone'**
   String get safetyTips;
 
   /// No description provided for @emailSupport.
@@ -2687,7 +2687,7 @@ abstract class AppLocalizations {
   /// No description provided for @emergencyContactsInfoDetails.
   ///
   /// In en, this message translates to:
-  /// **'â€¢ Add up to 5 trusted contacts\n\nâ€¢ Contacts are notified during SOS activation\n\nâ€¢ Primary contact is called first\n\nâ€¢ SMS with your location is sent automatically\n\nâ€¢ Works even without internet (via SMS)\n\nâ€¢ Keep contact details updated'**
+  /// **'Add up to 5 trusted contacts\n\nContacts are notified during SOS activation\n\nPrimary contact is called first\n\nSMS with your location is sent automatically\n\nWorks even without internet (via SMS)\n\nKeep contact details updated'**
   String get emergencyContactsInfoDetails;
 
   /// No description provided for @gotIt.

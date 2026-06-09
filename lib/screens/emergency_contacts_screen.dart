@@ -67,9 +67,16 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddEditDialog(context),
-        icon: const Icon(Icons.add),
-        label: Text(AppLocalizations.of(context)!.addContact),
+        icon: const Icon(Icons.add, color: Colors.black),
+        label: Text(
+          AppLocalizations.of(context)!.addContact,
+          style: const TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Colors.black,
       ),
     );
   }
@@ -404,31 +411,71 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
     final scheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
 
+    // Bullet points as a proper list (avoids encoding issues with ARB)
+    final points = [
+      'Add up to 5 trusted contacts',
+      'Contacts are notified during SOS activation',
+      'Primary contact is called first',
+      'SMS with your location is sent automatically',
+      'Works even without internet (via SMS)',
+      'Keep contact details updated',
+    ];
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         title: Row(
           children: [
             Icon(Icons.info, color: scheme.primary),
             const SizedBox(width: 8),
-            Text(l10n.aboutEmergencyContacts),
+            Flexible(
+              child: Text(
+                l10n.aboutEmergencyContacts,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 2,
+              ),
+            ),
           ],
         ),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                l10n.emergencyContactsInfoDetails,
-                style: const TextStyle(fontSize: 14),
+            children: points.map((point) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(top: 6),
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: scheme.primary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      point,
+                      style: const TextStyle(fontSize: 14, height: 1.4),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            )).toList(),
           ),
         ),
         actions: [
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: scheme.primary,
+              foregroundColor: Colors.black,
+            ),
             child: Text(l10n.gotIt),
           ),
         ],
