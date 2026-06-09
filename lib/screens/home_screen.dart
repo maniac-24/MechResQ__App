@@ -3,7 +3,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:ui' as ui;
-import 'dart:typed_data';
+import 'dart:convert';
+import 'dart:developer' as developer;
+import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations.dart';
 
 import '../services/mechanic_firestore_service.dart';
@@ -11,6 +14,7 @@ import '../services/auth_service.dart';
 import '../services/notification_service.dart';
 import '../services/location_service.dart';
 import '../services/nearby_places_service.dart';
+import '../utils/google_maps_config.dart';
 import '../widgets/mechanic_card.dart';
 import '../screens/help_screen.dart';
 import 'mechanic_detail_screen.dart';
@@ -47,6 +51,11 @@ class _MechanicListScreenState extends State<MechanicListScreen> {
   BitmapDescriptor? _servicePinIcon;
   Set<Marker> _nearbyMarkers = {};
   bool _loadingPlaces = false;
+  // Route state
+  Set<Polyline> _routePolylines = {};
+  NearbyPlace? _selectedPlace;
+  String? _routeDistance;
+  String? _routeDuration;
 
   // filter state
   int? _expYears;
@@ -110,6 +119,7 @@ class _MechanicListScreenState extends State<MechanicListScreen> {
         final markers = <Marker>{};
         for (final place in places) {
           final icon = _categoryIcon(place.category);
+          final capturedPlace = place;
           markers.add(Marker(
             markerId: MarkerId(place.placeId),
             position: LatLng(place.lat, place.lng),
@@ -117,8 +127,11 @@ class _MechanicListScreenState extends State<MechanicListScreen> {
             infoWindow: InfoWindow(
               title: place.name,
               snippet: _categoryLabel(place.category) +
-                  (place.rating != null ? ' • ${place.rating!.toStringAsFixed(1)} stars' : ''),
+                  (place.rating != null
+                      ? '  •  ${place.rating!.toStringAsFixed(1)} stars'
+                      : ''),
             ),
+            onTap: () => _onPlaceTapped(capturedPlace),
           ));
         }
         setState(() {
@@ -186,6 +199,115 @@ class _MechanicListScreenState extends State<MechanicListScreen> {
       case PlaceCategory.sparePartShop:  return 'Spare Parts';
       case PlaceCategory.autoWorkshop:   return 'Auto Workshop';
     }
+  }
+
+  /// Called when user taps a nearby place marker — fetch and draw route
+  Future<void> _onPlaceTapped(NearbyPlace place) async {
+    if (_userLatLng == null) return;
+
+    setState(() {
+      _selectedPlace = place;
+      _routeDistance = null;
+      _routeDuration = null;
+      _routePolylines = {};
+    });
+
+    try {
+      final origin = '${_userLatLng!.latitude},${_userLatLng!.longitude}';
+      final dest = '${place.lat},${place.lng}';
+      final url = Uri.parse(
+        'https://maps.googleapis.com/maps/api/directions/json'
+        '?origin=$origin&destination=$dest&mode=driving&key=$kGoogleMapsApiKey',
+      );
+
+      final response = await http.get(url);
+      if (response.statusCode != 200) return;
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      if (data['status'] != 'OK') return;
+
+      final route = (data['routes'] as List).first as Map<String, dynamic>;
+      final leg = (route['legs'] as List).first as Map<String, dynamic>;
+
+      final distance = leg['distance']['text'] as String;
+      final duration = leg['duration']['text'] as String;
+
+      // Decode polyline points
+      final encodedPolyline =
+          route['overview_polyline']['points'] as String;
+      final points = _decodePolyline(encodedPolyline);
+
+      if (!mounted) return;
+      setState(() {
+        _routeDistance = distance;
+        _routeDuration = duration;
+        _routePolylines = {
+          Polyline(
+            polylineId: const PolylineId('route'),
+            points: points,
+            color: const Color(0xFF1565C0),
+            width: 4,
+            patterns: [],
+          ),
+        };
+      });
+
+      // Animate camera to show full route
+      if (_mapController != null && points.isNotEmpty) {
+        final bounds = _boundsFromLatLngList(
+            [_userLatLng!, LatLng(place.lat, place.lng)]);
+        _mapController!.animateCamera(
+            CameraUpdate.newLatLngBounds(bounds, 80));
+      }
+    } catch (e) {
+      developer.log('Route fetch error: $e', name: 'HomeScreen');
+    }
+  }
+
+  /// Decode Google Directions encoded polyline
+  List<LatLng> _decodePolyline(String encoded) {
+    final points = <LatLng>[];
+    int index = 0;
+    final len = encoded.length;
+    int lat = 0, lng = 0;
+
+    while (index < len) {
+      int b, shift = 0, result = 0;
+      do {
+        b = encoded.codeUnitAt(index++) - 63;
+        result |= (b & 0x1F) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      final dlat = (result & 1) != 0 ? ~(result >> 1) : (result >> 1);
+      lat += dlat;
+
+      shift = 0;
+      result = 0;
+      do {
+        b = encoded.codeUnitAt(index++) - 63;
+        result |= (b & 0x1F) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      final dlng = (result & 1) != 0 ? ~(result >> 1) : (result >> 1);
+      lng += dlng;
+
+      points.add(LatLng(lat / 1e5, lng / 1e5));
+    }
+    return points;
+  }
+
+  LatLngBounds _boundsFromLatLngList(List<LatLng> list) {
+    double? minLat, maxLat, minLng, maxLng;
+    for (final p in list) {
+      minLat = minLat == null ? p.latitude  : (p.latitude  < minLat ? p.latitude  : minLat);
+      maxLat = maxLat == null ? p.latitude  : (p.latitude  > maxLat ? p.latitude  : maxLat);
+      minLng = minLng == null ? p.longitude : (p.longitude < minLng ? p.longitude : minLng);
+      maxLng = maxLng == null ? p.longitude : (p.longitude > maxLng ? p.longitude : maxLng);
+    }
+    return LatLngBounds(
+      southwest: LatLng(minLat!, minLng!),
+      northeast: LatLng(maxLat!, maxLng!),
+    );
   }
 
   /// Check and request permissions with proper sequencing
@@ -753,22 +875,18 @@ class _MechanicListScreenState extends State<MechanicListScreen> {
       );
     }
 
-    // Build all markers: nearby places + Service Point for user location
-    final allMarkers = <Marker>{
-      ..._nearbyMarkers,
-      // Custom "Service Point" marker at user location
-      Marker(
-        markerId: const MarkerId('service_point'),
-        position: _userLatLng!,
-        icon: _servicePinIcon ?? BitmapDescriptor.defaultMarkerWithHue(
-            BitmapDescriptor.hueGreen),
-        infoWindow: const InfoWindow(
-          title: 'Service Point',
-          snippet: 'Your current location',
-        ),
-        zIndex: 10,
-      ),
-    };
+    // Service Point marker — attached to coordinates so it stays fixed on scroll
+    final serviceMarker = Marker(
+      markerId: const MarkerId('service_point'),
+      position: _userLatLng!,
+      icon: _servicePinIcon ??
+          BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+      // InfoWindow acts as the "Service Point" label attached to the marker
+      infoWindow: const InfoWindow(title: 'Service Point'),
+      zIndex: 10,
+    );
+
+    final allMarkers = <Marker>{serviceMarker, ..._nearbyMarkers};
 
     return Stack(
       children: [
@@ -777,94 +895,47 @@ class _MechanicListScreenState extends State<MechanicListScreen> {
             target: _userLatLng!,
             zoom: 15,
           ),
-          myLocationEnabled: false, // Disabled — using custom Service Point marker
+          myLocationEnabled: false,
           myLocationButtonEnabled: false,
           zoomControlsEnabled: false,
           scrollGesturesEnabled: true,
           rotateGesturesEnabled: true,
           tiltGesturesEnabled: true,
           mapToolbarEnabled: false,
-          padding: const EdgeInsets.only(bottom: 100),
+          padding: EdgeInsets.only(
+            bottom: _selectedPlace != null ? 160 : 100,
+          ),
           markers: allMarkers,
+          polylines: _routePolylines,
           onMapCreated: (controller) {
             _mapController = controller;
+            // Show the Service Point InfoWindow on load
+            Future.delayed(const Duration(milliseconds: 800), () {
+              controller.showMarkerInfoWindow(
+                  const MarkerId('service_point'));
+            });
+          },
+          onTap: (_) {
+            // Dismiss route card when tapping blank map area
+            if (_selectedPlace != null) {
+              setState(() {
+                _selectedPlace = null;
+                _routePolylines = {};
+                _routeDistance = null;
+                _routeDuration = null;
+              });
+            }
           },
         ),
 
-        // "Service Point" label above the custom marker (Rapido-style)
-        // Positioned at center of map viewport
-        Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF00C853),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: const Text(
-                  'Service Point',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              // Pointer triangle
-              CustomPaint(
-                size: const Size(16, 8),
-                painter: _TrianglePainter(color: const Color(0xFF00C853)),
-              ),
-            ],
-          ),
-        ),
-
-        // Map legend (top-right)
-        Positioned(
-          top: 12,
-          right: 12,
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: scheme.surface.withValues(alpha: 0.92),
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 6,
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _legendItem(Colors.red, 'Auto Workshop'),
-                _legendItem(Colors.orange, 'Petrol Bunk'),
-                _legendItem(Colors.purple, 'Towing'),
-                _legendItem(Colors.cyan, 'Car Wash'),
-                _legendItem(const Color(0xFF00C853), 'Service Point'),
-              ],
-            ),
-          ),
-        ),
-
-        // Loading indicator for places
+        // Loading indicator
         if (_loadingPlaces)
           Positioned(
             top: 12,
             left: 12,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: scheme.surface.withValues(alpha: 0.9),
                 borderRadius: BorderRadius.circular(20),
@@ -876,12 +947,163 @@ class _MechanicListScreenState extends State<MechanicListScreen> {
                     width: 14,
                     height: 14,
                     child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: scheme.primary,
-                    ),
+                        strokeWidth: 2, color: scheme.primary),
                   ),
                   const SizedBox(width: 6),
-                  const Text('Finding nearby...', style: TextStyle(fontSize: 11)),
+                  const Text('Finding nearby...',
+                      style: TextStyle(fontSize: 11)),
+                ],
+              ),
+            ),
+          ),
+
+        // Route info card — shown when a place is selected
+        if (_selectedPlace != null)
+          Positioned(
+            bottom: 110,
+            left: 12,
+            right: 12,
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: scheme.surface,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: _categoryColor(_selectedPlace!.category),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _selectedPlace!.name,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 15),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => setState(() {
+                          _selectedPlace = null;
+                          _routePolylines = {};
+                          _routeDistance = null;
+                          _routeDuration = null;
+                        }),
+                        child: const Icon(Icons.close, size: 18),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _categoryLabel(_selectedPlace!.category),
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: scheme.onSurface.withValues(alpha: 0.6)),
+                  ),
+                  const Divider(height: 16),
+                  if (_routeDistance == null)
+                    const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        SizedBox(width: 8),
+                        Text('Calculating best route...',
+                            style: TextStyle(fontSize: 13)),
+                      ],
+                    )
+                  else
+                    Row(
+                      children: [
+                        // Distance
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Icon(Icons.route,
+                                  size: 18, color: scheme.primary),
+                              const SizedBox(width: 6),
+                              Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Distance',
+                                      style: TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.grey)),
+                                  Text(_routeDistance!,
+                                      style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        // ETA
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Icon(Icons.access_time,
+                                  size: 18, color: scheme.primary),
+                              const SizedBox(width: 6),
+                              Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  const Text('ETA',
+                                      style: TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.grey)),
+                                  Text(_routeDuration ?? '--',
+                                      style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Navigate button
+                        ElevatedButton.icon(
+                          onPressed: () => _openInGoogleMaps(
+                              _selectedPlace!.lat, _selectedPlace!.lng),
+                          icon: const Icon(Icons.navigation, size: 16),
+                          label: const Text('Go'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1565C0),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            minimumSize: Size.zero,
+                            tapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8)),
+                          ),
+                        ),
+                      ],
+                    ),
                 ],
               ),
             ),
@@ -890,22 +1112,22 @@ class _MechanicListScreenState extends State<MechanicListScreen> {
     );
   }
 
-  Widget _legendItem(Color color, String label) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 10,
-            height: 10,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 6),
-          Text(label, style: const TextStyle(fontSize: 10)),
-        ],
-      ),
-    );
+  Color _categoryColor(PlaceCategory category) {
+    switch (category) {
+      case PlaceCategory.petrolBunk:    return Colors.orange;
+      case PlaceCategory.towingService: return Colors.purple;
+      case PlaceCategory.carWash:       return Colors.cyan;
+      case PlaceCategory.sparePartShop: return Colors.amber;
+      case PlaceCategory.autoWorkshop:  return Colors.red;
+    }
+  }
+
+  Future<void> _openInGoogleMaps(double lat, double lng) async {
+    final uri = Uri.parse(
+        'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 
   /// Build mechanics stream list (extracted for reuse)
