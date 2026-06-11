@@ -39,7 +39,6 @@ class _EditProfileScreenState extends State<EditProfileScreen>
 
   // SETTINGS (only essential for emergency app)
   bool _serviceReminders = true;
-  bool _biometricLogin = false;
 
   final List<String> _languagesList = [
     "English",
@@ -290,7 +289,6 @@ class _EditProfileScreenState extends State<EditProfileScreen>
           
           // Settings
           _serviceReminders = profile['serviceReminders'] ?? true;
-          _biometricLogin = profile['biometricLogin'] ?? false;
           
           _isLoading = false;
         });
@@ -438,7 +436,6 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     try {
       await _firestore.updateCompleteUserProfile(
         serviceReminders: _serviceReminders,
-        biometricLogin: _biometricLogin,
       );
 
       if (mounted) {
@@ -645,17 +642,6 @@ class _EditProfileScreenState extends State<EditProfileScreen>
             l10n.serviceRemindersDesc,
             _serviceReminders,
             (v) => setState(() => _serviceReminders = v),
-          ),
-
-          const SizedBox(height: 24),
-
-          // --- SECURITY ---
-          _sectionHeader(l10n.security, Icons.security_outlined),
-          _settingSwitch(
-            l10n.biometricLogin,
-            l10n.biometricLoginDesc,
-            _biometricLogin,
-            (v) => setState(() => _biometricLogin = v),
           ),
 
           const SizedBox(height: 24),

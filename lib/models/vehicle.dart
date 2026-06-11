@@ -6,11 +6,12 @@ class Vehicle {
   final String id;
   final String userId;
   final String name;
-  final String type; // Car, Bike, Truck, Other
-  final String make;
+  final String type;       // Car, Bike, Truck, Other, or custom
+  final String make;       // Brand/Company (e.g., Tata, Toyota)
   final String model;
   final String year;
   final String licensePlate;
+  final String? fuelType;  // Petrol, Diesel, CNG, Electric
   final String? imageUrl;
   final DateTime createdAt;
 
@@ -23,11 +24,11 @@ class Vehicle {
     required this.model,
     required this.year,
     required this.licensePlate,
+    this.fuelType,
     this.imageUrl,
     required this.createdAt,
   });
 
-  // Convert to Firestore Map
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -38,12 +39,12 @@ class Vehicle {
       'model': model,
       'year': year,
       'licensePlate': licensePlate,
+      'fuelType': fuelType,
       'imageUrl': imageUrl,
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }
 
-  // Create from Firestore Map
   factory Vehicle.fromMap(Map<String, dynamic> map) {
     return Vehicle(
       id: map['id'] ?? '',
@@ -54,6 +55,7 @@ class Vehicle {
       model: map['model'] ?? '',
       year: map['year'] ?? '',
       licensePlate: map['licensePlate'] ?? '',
+      fuelType: map['fuelType'],
       imageUrl: map['imageUrl'],
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );

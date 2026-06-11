@@ -6091,6 +6091,342 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Keep Request'**
   String get historyKeepRequest;
+
+  /// No description provided for @vehicleTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle Type'**
+  String get vehicleTypeLabel;
+
+  /// No description provided for @vehicleBrandLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Brand'**
+  String get vehicleBrandLabel;
+
+  /// No description provided for @vehicleBrandHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g., Tata, Toyota'**
+  String get vehicleBrandHint;
+
+  /// No description provided for @vehicleCustomTypeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type Your Vehicle Name'**
+  String get vehicleCustomTypeHint;
+
+  /// No description provided for @vehicleRegistrationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration Number'**
+  String get vehicleRegistrationLabel;
+
+  /// No description provided for @vehicleRegistrationHint.
+  ///
+  /// In en, this message translates to:
+  /// **'XX 00 XX 0000'**
+  String get vehicleRegistrationHint;
+
+  /// No description provided for @vehicleFuelTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Fuel Type'**
+  String get vehicleFuelTypeLabel;
+
+  /// No description provided for @vehicleFuelPetrol.
+  ///
+  /// In en, this message translates to:
+  /// **'Petrol'**
+  String get vehicleFuelPetrol;
+
+  /// No description provided for @vehicleFuelDiesel.
+  ///
+  /// In en, this message translates to:
+  /// **'Diesel'**
+  String get vehicleFuelDiesel;
+
+  /// No description provided for @vehicleFuelCng.
+  ///
+  /// In en, this message translates to:
+  /// **'CNG'**
+  String get vehicleFuelCng;
+
+  /// No description provided for @vehicleFuelElectric.
+  ///
+  /// In en, this message translates to:
+  /// **'Electric'**
+  String get vehicleFuelElectric;
+
+  /// No description provided for @vehicleTypeCar.
+  ///
+  /// In en, this message translates to:
+  /// **'Car'**
+  String get vehicleTypeCar;
+
+  /// No description provided for @vehicleTypeBike.
+  ///
+  /// In en, this message translates to:
+  /// **'Bike'**
+  String get vehicleTypeBike;
+
+  /// No description provided for @vehicleTypeTruck.
+  ///
+  /// In en, this message translates to:
+  /// **'Truck'**
+  String get vehicleTypeTruck;
+
+  /// No description provided for @vehicleTypeScooter.
+  ///
+  /// In en, this message translates to:
+  /// **'Scooter'**
+  String get vehicleTypeScooter;
+
+  /// No description provided for @vehicleTypeAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto'**
+  String get vehicleTypeAuto;
+
+  /// No description provided for @vehicleTypeBus.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus'**
+  String get vehicleTypeBus;
+
+  /// No description provided for @vehicleTypeOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get vehicleTypeOther;
+
+  /// No description provided for @vehiclePleaseSelectType.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a vehicle type'**
+  String get vehiclePleaseSelectType;
+
+  /// No description provided for @vehiclePleaseEnterType.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your vehicle type'**
+  String get vehiclePleaseEnterType;
+
+  /// No description provided for @emergencyAboutPoint1.
+  ///
+  /// In en, this message translates to:
+  /// **'Add up to 5 trusted contacts'**
+  String get emergencyAboutPoint1;
+
+  /// No description provided for @emergencyAboutPoint2.
+  ///
+  /// In en, this message translates to:
+  /// **'Contacts are notified during SOS activation'**
+  String get emergencyAboutPoint2;
+
+  /// No description provided for @emergencyAboutPoint3.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary contact is called first'**
+  String get emergencyAboutPoint3;
+
+  /// No description provided for @emergencyAboutPoint4.
+  ///
+  /// In en, this message translates to:
+  /// **'SMS with your location is sent automatically'**
+  String get emergencyAboutPoint4;
+
+  /// No description provided for @emergencyAboutPoint5.
+  ///
+  /// In en, this message translates to:
+  /// **'Works even without internet (via SMS)'**
+  String get emergencyAboutPoint5;
+
+  /// No description provided for @emergencyAboutPoint6.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep contact details updated'**
+  String get emergencyAboutPoint6;
+
+  /// No description provided for @receiptDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt'**
+  String get receiptDetailTitle;
+
+  /// No description provided for @receiptDetailServiceDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Service Details'**
+  String get receiptDetailServiceDetails;
+
+  /// No description provided for @receiptDetailItemisedCharges.
+  ///
+  /// In en, this message translates to:
+  /// **'Itemised Charges'**
+  String get receiptDetailItemisedCharges;
+
+  /// No description provided for @receiptDetailPaymentInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Information'**
+  String get receiptDetailPaymentInfo;
+
+  /// No description provided for @receiptDetailBaseCharge.
+  ///
+  /// In en, this message translates to:
+  /// **'Base Service Charge'**
+  String get receiptDetailBaseCharge;
+
+  /// No description provided for @receiptDetailLabour.
+  ///
+  /// In en, this message translates to:
+  /// **'Labour'**
+  String get receiptDetailLabour;
+
+  /// No description provided for @receiptDetailCallOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Call-Out / Travel Fee'**
+  String get receiptDetailCallOut;
+
+  /// No description provided for @receiptDetailSpareParts.
+  ///
+  /// In en, this message translates to:
+  /// **'Spare Parts'**
+  String get receiptDetailSpareParts;
+
+  /// No description provided for @receiptDetailSubTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Sub-Total'**
+  String get receiptDetailSubTotal;
+
+  /// No description provided for @receiptDetailGst.
+  ///
+  /// In en, this message translates to:
+  /// **'GST (18%)'**
+  String get receiptDetailGst;
+
+  /// No description provided for @receiptDetailTotalAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'TOTAL AMOUNT'**
+  String get receiptDetailTotalAmount;
+
+  /// No description provided for @receiptDetailMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Method'**
+  String get receiptDetailMethod;
+
+  /// No description provided for @receiptDetailStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get receiptDetailStatus;
+
+  /// No description provided for @receiptDetailTransactionId.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction ID'**
+  String get receiptDetailTransactionId;
+
+  /// No description provided for @receiptDetailReceiptId.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt ID'**
+  String get receiptDetailReceiptId;
+
+  /// No description provided for @receiptDetailPaidOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid On'**
+  String get receiptDetailPaidOn;
+
+  /// No description provided for @receiptDetailVehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle'**
+  String get receiptDetailVehicle;
+
+  /// No description provided for @receiptDetailIssue.
+  ///
+  /// In en, this message translates to:
+  /// **'Issue'**
+  String get receiptDetailIssue;
+
+  /// No description provided for @receiptDetailLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get receiptDetailLocation;
+
+  /// No description provided for @receiptDetailMechanic.
+  ///
+  /// In en, this message translates to:
+  /// **'Mechanic'**
+  String get receiptDetailMechanic;
+
+  /// No description provided for @receiptDetailComplexity.
+  ///
+  /// In en, this message translates to:
+  /// **'Complexity'**
+  String get receiptDetailComplexity;
+
+  /// No description provided for @receiptDetailThankYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you for choosing MechResQ!'**
+  String get receiptDetailThankYou;
+
+  /// No description provided for @receiptDetailTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Drive safe. We\'re always here when you need us.'**
+  String get receiptDetailTagline;
+
+  /// No description provided for @receiptDetailGstNote.
+  ///
+  /// In en, this message translates to:
+  /// **'This receipt is an estimate. Final charges may vary based on actual spare parts used. GST @ 18% included. For disputes contact support@mechresq.com'**
+  String get receiptDetailGstNote;
+
+  /// No description provided for @receiptDetailPdfError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not generate PDF. Please try again.'**
+  String get receiptDetailPdfError;
+
+  /// No description provided for @receiptDetailDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Download PDF'**
+  String get receiptDetailDownload;
+
+  /// No description provided for @receiptDetailGenerating.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating…'**
+  String get receiptDetailGenerating;
+
+  /// No description provided for @receiptDetailNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt not found.'**
+  String get receiptDetailNotFound;
+
+  /// No description provided for @receiptDetailLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load receipt. Please try again.'**
+  String get receiptDetailLoadFailed;
+
+  /// No description provided for @receiptDetailPrint.
+  ///
+  /// In en, this message translates to:
+  /// **'Print / Preview'**
+  String get receiptDetailPrint;
 }
 
 class _AppLocalizationsDelegate

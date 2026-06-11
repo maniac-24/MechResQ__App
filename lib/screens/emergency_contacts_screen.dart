@@ -411,14 +411,14 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
     final scheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
 
-    // Bullet points as a proper list (avoids encoding issues with ARB)
+    // Bullet points using l10n keys
     final points = [
-      'Add up to 5 trusted contacts',
-      'Contacts are notified during SOS activation',
-      'Primary contact is called first',
-      'SMS with your location is sent automatically',
-      'Works even without internet (via SMS)',
-      'Keep contact details updated',
+      l10n.emergencyAboutPoint1,
+      l10n.emergencyAboutPoint2,
+      l10n.emergencyAboutPoint3,
+      l10n.emergencyAboutPoint4,
+      l10n.emergencyAboutPoint5,
+      l10n.emergencyAboutPoint6,
     ];
 
     showDialog(

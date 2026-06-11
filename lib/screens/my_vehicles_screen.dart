@@ -421,18 +421,34 @@ class _AddVehicleFormState extends State<_AddVehicleForm> {
   final _formKey = GlobalKey<FormState>();
   final ImagePicker _picker = ImagePicker();
 
-  final _nameC = TextEditingController();
-  final _makeC = TextEditingController();
+  // Standard vehicle types — "Other" triggers custom text field
+  static const List<String> _standardTypes = [
+    'Car', 'Bike', 'Truck', 'Scooter', 'Auto', 'Bus', 'Other'
+  ];
+
+  // Fuel type options
+  static const List<String> _fuelTypes = [
+    'Petrol', 'Diesel', 'CNG', 'Electric'
+  ];
+
+  // Custom vehicle types added by users (in-memory, persisted to Firestore later)
+  static final List<String> _customTypes = [];
+
+  final _customTypeC = TextEditingController(); // "Other" custom type
+  final _makeC = TextEditingController();       // Brand/Company
   final _modelC = TextEditingController();
   final _yearC = TextEditingController();
   final _plateC = TextEditingController();
 
-  String? _vehicleType;
+  String? _selectedType;   // selected from dropdown
+  String? _finalType;      // resolved type (standard or custom)
+  String? _fuelType;
   File? _image;
+  bool _showCustomTypeField = false;
 
   @override
   void dispose() {
-    _nameC.dispose();
+    _customTypeC.dispose();
     _makeC.dispose();
     _modelC.dispose();
     _yearC.dispose();
@@ -718,32 +734,60 @@ class _AddVehicleFormState extends State<_AddVehicleForm> {
   Future<void> _addVehicle() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Show loading
+    // Resolve final vehicle type
+    if (_selectedType == null) {
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.vehiclePleaseSelectType)),
+      );
+      return;
+    }
+
+    if (_selectedType == 'Other') {
+      final custom = _customTypeC.text.trim();
+      if (custom.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context)!.vehiclePleaseEnterType)),
+        );
+        return;
+      }
+      _finalType = custom;
+      // Save custom type so future dropdowns show it
+      if (!_customTypes.contains(custom)) {
+        setState(() => _customTypes.add(custom));
+      }
+    } else {
+      _finalType = _selectedType;
+    }
+
+    // Derive vehicle name from brand + model
+    final make = _makeC.text.trim();
+    final model = _modelC.text.trim();
+    final derivedName = make.isNotEmpty && model.isNotEmpty
+        ? '$make $model'
+        : (make.isNotEmpty ? make : (_finalType ?? 'Vehicle'));
+
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(),
-      ),
+      builder: (context) => const Center(child: CircularProgressIndicator()),
     );
 
     try {
-      // Add vehicle to Firestore
       final vehicleService = VehicleService();
       final vehicleId = await vehicleService.addVehicle(
         userId: widget.userId,
-        name: _nameC.text.trim(),
-        type: _vehicleType!,
-        make: _makeC.text.trim(),
-        model: _modelC.text.trim(),
+        name: derivedName,
+        type: _finalType!,
+        make: make,
+        model: model,
         year: _yearC.text.trim(),
         licensePlate: _plateC.text.trim(),
+        fuelType: _fuelType,
         imageFile: _image,
       );
 
       if (!mounted) return;
-
-      // Close loading dialog
       Navigator.pop(context);
 
       if (vehicleId != null) {
@@ -751,20 +795,18 @@ class _AddVehicleFormState extends State<_AddVehicleForm> {
           context,
           AppLocalizations.of(context)!.vehicleAddedSuccessfully,
         );
-
-        // Reset form
         _formKey.currentState!.reset();
         setState(() {
-          _vehicleType = null;
+          _selectedType = null;
+          _fuelType = null;
           _image = null;
-          _nameC.clear();
+          _showCustomTypeField = false;
+          _customTypeC.clear();
           _makeC.clear();
           _modelC.clear();
           _yearC.clear();
           _plateC.clear();
         });
-
-        // Call success callback to switch to list view
         widget.onSuccess();
       } else {
         SnackBarHelper.showError(
@@ -774,14 +816,8 @@ class _AddVehicleFormState extends State<_AddVehicleForm> {
       }
     } catch (e) {
       if (!mounted) return;
-      
-      // Close loading dialog
       Navigator.pop(context);
-      
-      SnackBarHelper.showError(
-        context,
-        'Error: ${e.toString()}',
-      );
+      SnackBarHelper.showError(context, 'Error: ${e.toString()}');
     }
   }
 
@@ -790,13 +826,23 @@ class _AddVehicleFormState extends State<_AddVehicleForm> {
     final scheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
 
-    // Get localized vehicle types
-    final vehicleTypes = [
-      l10n.car,
-      l10n.bike,
-      l10n.truck,
-      l10n.otherVehicle,
+    // All vehicle types: standard + any user-added custom types
+    final standardTypes = [
+      l10n.vehicleTypeCar,
+      l10n.vehicleTypeBike,
+      l10n.vehicleTypeTruck,
+      l10n.vehicleTypeScooter,
+      l10n.vehicleTypeAuto,
+      l10n.vehicleTypeBus,
+      l10n.vehicleTypeOther,
     ];
+    final fuelTypes = [
+      l10n.vehicleFuelPetrol,
+      l10n.vehicleFuelDiesel,
+      l10n.vehicleFuelCng,
+      l10n.vehicleFuelElectric,
+    ];
+    final allTypes = [...standardTypes, ..._customTypes];
 
     return Scaffold(
       appBar: AppBar(
@@ -805,7 +851,6 @@ class _AddVehicleFormState extends State<_AddVehicleForm> {
           onPressed: widget.onCancel,
         ),
         title: Text(l10n.addVehicle),
-        // No actions, no extra buttons
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -814,113 +859,173 @@ class _AddVehicleFormState extends State<_AddVehicleForm> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-            _input(_nameC, l10n.vehicleName),
-            const SizedBox(height: 14),
-            _dropdown(
-              label: l10n.vehicleType,
-              value: _vehicleType,
-              items: vehicleTypes,
-              onChanged: (v) => setState(() => _vehicleType = v),
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(child: _input(_makeC, l10n.make)),
-                const SizedBox(width: 12),
-                Expanded(child: _input(_modelC, l10n.model)),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: _input(
-                    _yearC,
-                    l10n.yearEg2020,
-                    keyboard: TextInputType.number,
+
+              // 1. VEHICLE TYPE (first field, with "Other" option)
+              _InlineDropdown(
+                label: l10n.vehicleTypeLabel,
+                value: _selectedType,
+                items: allTypes,
+                onChanged: (val) {
+                  setState(() {
+                    _selectedType = val;
+                    _showCustomTypeField = val == l10n.vehicleTypeOther;
+                  });
+                },
+                scheme: scheme,
+              ),
+              const SizedBox(height: 14),
+
+              // 1b. Custom vehicle type field
+              if (_showCustomTypeField) ...[
+                TextFormField(
+                  controller: _customTypeC,
+                  decoration: InputDecoration(
+                    labelText: l10n.vehicleTypeLabel,
+                    hintText: l10n.vehicleCustomTypeHint,
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6)),
                   ),
+                  onChanged: (_) => setState(() {}),
+                  validator: (v) => _selectedType == l10n.vehicleTypeOther &&
+                          (v == null || v.trim().isEmpty)
+                      ? l10n.required
+                      : null,
                 ),
-                const SizedBox(width: 12),
-                Expanded(child: _input(_plateC, l10n.licenseplate)),
+                const SizedBox(height: 14),
               ],
-            ),
-            const SizedBox(height: 18),
-            Row(
-              children: [
-                Container(
-                  width: 120,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: scheme.outlineVariant),
-                    borderRadius: BorderRadius.circular(6),
-                    color: scheme.surfaceContainerHigh,
-                  ),
-                  child: _image == null
-                      ? Center(
-                          child: Text(
-                            l10n.noImage,
-                            style: TextStyle(
-                              color: scheme.onSurface.withOpacity(0.7),
+
+              // 2. BRAND
+              TextFormField(
+                controller: _makeC,
+                decoration: InputDecoration(
+                  labelText: l10n.vehicleBrandLabel,
+                  hintText: l10n.vehicleBrandHint,
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(6)),
+                ),
+                textCapitalization: TextCapitalization.words,
+              ),
+              const SizedBox(height: 14),
+
+              // 3. MODEL
+              TextFormField(
+                controller: _modelC,
+                decoration: InputDecoration(
+                  labelText: l10n.model,
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(6)),
+                ),
+                textCapitalization: TextCapitalization.words,
+              ),
+              const SizedBox(height: 14),
+
+              // 4. FUEL TYPE
+              _InlineDropdown(
+                label: l10n.vehicleFuelTypeLabel,
+                value: _fuelType,
+                items: fuelTypes,
+                onChanged: (val) => setState(() => _fuelType = val),
+                scheme: scheme,
+              ),
+              const SizedBox(height: 14),
+
+              // 5. REGISTRATION NUMBER
+              TextFormField(
+                controller: _plateC,
+                decoration: InputDecoration(
+                  labelText: l10n.vehicleRegistrationLabel,
+                  hintText: l10n.vehicleRegistrationHint,
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(6)),
+                ),
+                textCapitalization: TextCapitalization.characters,
+              ),
+              const SizedBox(height: 14),
+
+              // 6. YEAR
+              TextFormField(
+                controller: _yearC,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: l10n.yearEg2020,
+                  hintText: 'e.g., 2020',
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(6)),
+                ),
+              ),
+              const SizedBox(height: 18),
+
+              // 7. IMAGE PICKER
+              Row(
+                children: [
+                  Container(
+                    width: 120,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: scheme.outlineVariant),
+                      borderRadius: BorderRadius.circular(6),
+                      color: scheme.surfaceContainerHigh,
+                    ),
+                    child: _image == null
+                        ? Center(
+                            child: Text(
+                              l10n.noImage,
+                              style: TextStyle(
+                                color:
+                                    scheme.onSurface.withValues(alpha: 0.7),
+                              ),
                             ),
+                          )
+                        : ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: Image.file(_image!, fit: BoxFit.cover),
                           ),
-                        )
-                      : ClipRRect(
-                          borderRadius: BorderRadius.circular(6),
-                          child: Image.file(
-                            _image!,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                ),
-                const SizedBox(width: 16),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: scheme.primary,
-                    foregroundColor: scheme.onPrimary,
                   ),
-                  onPressed: _chooseImage,
-                  icon: const Icon(Icons.image),
-                  label: Text(l10n.chooseImage),
-                ),
-              ],
-            ),
-            const SizedBox(height: 26),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      _formKey.currentState!.reset();
-                      setState(() {
-                        _vehicleType = null;
-                        _image = null;
-                      });
-                    },
-                    child: Text(l10n.cancel),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  flex: 2,
-                  child: ElevatedButton(
+                  const SizedBox(width: 16),
+                  ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: scheme.primary,
                       foregroundColor: scheme.onPrimary,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
-                    onPressed: _addVehicle,
-                    child: Text(
-                      l10n.addVehicle,
-                      style: const TextStyle(fontSize: 16),
+                    onPressed: _chooseImage,
+                    icon: const Icon(Icons.image),
+                    label: Text(l10n.chooseImage),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 26),
+
+              // 8. CANCEL / ADD VEHICLE BUTTONS
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: widget.onCancel,
+                      child: Text(l10n.cancel),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                  const SizedBox(width: 16),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: scheme.primary,
+                        foregroundColor: scheme.onPrimary,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      onPressed: _addVehicle,
+                      child: Text(
+                        l10n.addVehicle,
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
-    ),
     );
   }
 
@@ -970,6 +1075,154 @@ class _AddVehicleFormState extends State<_AddVehicleForm> {
           borderRadius: BorderRadius.circular(6),
         ),
       ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════
+// INLINE DROPDOWN — expands list just below the field
+// ═══════════════════════════════════════════
+
+class _InlineDropdown extends StatefulWidget {
+  final String label;
+  final String? value;
+  final List<String> items;
+  final ValueChanged<String?> onChanged;
+  final ColorScheme scheme;
+
+  const _InlineDropdown({
+    required this.label,
+    required this.value,
+    required this.items,
+    required this.onChanged,
+    required this.scheme,
+  });
+
+  @override
+  State<_InlineDropdown> createState() => _InlineDropdownState();
+}
+
+class _InlineDropdownState extends State<_InlineDropdown> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = widget.scheme;
+    final selected = widget.value;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // The tap target that looks like a text field
+        GestureDetector(
+          onTap: () => setState(() => _open = !_open),
+          child: Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: _open
+                    ? scheme.primary
+                    : scheme.onSurface.withValues(alpha: 0.35),
+                width: _open ? 2 : 1,
+              ),
+              borderRadius: BorderRadius.only(
+                topLeft: const Radius.circular(6),
+                topRight: const Radius.circular(6),
+                bottomLeft: Radius.circular(_open ? 0 : 6),
+                bottomRight: Radius.circular(_open ? 0 : 6),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    selected ?? widget.label,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: selected == null
+                          ? scheme.onSurface.withValues(alpha: 0.45)
+                          : scheme.onSurface,
+                    ),
+                  ),
+                ),
+                Icon(
+                  _open
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
+                  color: scheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // The expandable list — renders inline just below the field
+        if (_open)
+          Container(
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(color: scheme.primary, width: 2),
+                right: BorderSide(color: scheme.primary, width: 2),
+                bottom: BorderSide(color: scheme.primary, width: 2),
+              ),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(6),
+                bottomRight: Radius.circular(6),
+              ),
+              color: scheme.surface,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 6,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              children: widget.items.map((item) {
+                final isSelected = item == selected;
+                return InkWell(
+                  onTap: () {
+                    widget.onChanged(item);
+                    setState(() => _open = false);
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? scheme.primary.withValues(alpha: 0.12)
+                          : Colors.transparent,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            item,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: isSelected
+                                  ? scheme.primary
+                                  : scheme.onSurface,
+                            ),
+                          ),
+                        ),
+                        if (isSelected)
+                          Icon(Icons.check,
+                              size: 18, color: scheme.primary),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+      ],
     );
   }
 }

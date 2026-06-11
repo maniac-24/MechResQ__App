@@ -3177,4 +3177,181 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String get historyKeepRequest => 'ವಿನಂತಿ ಉಳಿಸಿಕೊಳ್ಳಿ';
+
+  @override
+  String get vehicleTypeLabel => 'ವಾಹನದ ಪ್ರಕಾರ';
+
+  @override
+  String get vehicleBrandLabel => 'ಬ್ರ್ಯಾಂಡ್';
+
+  @override
+  String get vehicleBrandHint => 'ಉದಾ: ಟಾಟಾ, ಟೊಯೊಟಾ';
+
+  @override
+  String get vehicleCustomTypeHint => 'ನಿಮ್ಮ ವಾಹನದ ಹೆಸರು ಟೈಪ್ ಮಾಡಿ';
+
+  @override
+  String get vehicleRegistrationLabel => 'ನೋಂದಣಿ ಸಂಖ್ಯೆ';
+
+  @override
+  String get vehicleRegistrationHint => 'XX 00 XX 0000';
+
+  @override
+  String get vehicleFuelTypeLabel => 'ಇಂಧನ ಪ್ರಕಾರ';
+
+  @override
+  String get vehicleFuelPetrol => 'ಪೆಟ್ರೋಲ್';
+
+  @override
+  String get vehicleFuelDiesel => 'ಡೀಸೆಲ್';
+
+  @override
+  String get vehicleFuelCng => 'ಸಿಎನ್‌ಜಿ';
+
+  @override
+  String get vehicleFuelElectric => 'ವಿದ್ಯುತ್';
+
+  @override
+  String get vehicleTypeCar => 'ಕಾರು';
+
+  @override
+  String get vehicleTypeBike => 'ಬೈಕ್';
+
+  @override
+  String get vehicleTypeTruck => 'ಟ್ರಕ್';
+
+  @override
+  String get vehicleTypeScooter => 'ಸ್ಕೂಟರ್';
+
+  @override
+  String get vehicleTypeAuto => 'ಆಟೋ';
+
+  @override
+  String get vehicleTypeBus => 'ಬಸ್';
+
+  @override
+  String get vehicleTypeOther => 'ಇತರೆ';
+
+  @override
+  String get vehiclePleaseSelectType => 'ದಯವಿಟ್ಟು ವಾಹನದ ಪ್ರಕಾರ ಆಯ್ಕೆಮಾಡಿ';
+
+  @override
+  String get vehiclePleaseEnterType => 'ದಯವಿಟ್ಟು ನಿಮ್ಮ ವಾಹನದ ಪ್ರಕಾರ ನಮೂದಿಸಿ';
+
+  @override
+  String get emergencyAboutPoint1 => '5 ವರೆಗೆ ವಿಶ್ವಾಸಾರ್ಹ ಸಂಪರ್ಕಗಳನ್ನು ಸೇರಿಸಿ';
+
+  @override
+  String get emergencyAboutPoint2 =>
+      'ಎಸ್‌ಒಎಸ್ ಸಕ್ರಿಯಗೊಳಿಸುವಾಗ ಸಂಪರ್ಕಗಳಿಗೆ ತಿಳಿಸಲಾಗುತ್ತದೆ';
+
+  @override
+  String get emergencyAboutPoint3 =>
+      'ಪ್ರಾಥಮಿಕ ಸಂಪರ್ಕಕ್ಕೆ ಮೊದಲು ಕರೆ ಮಾಡಲಾಗುತ್ತದೆ';
+
+  @override
+  String get emergencyAboutPoint4 =>
+      'ನಿಮ್ಮ ಸ್ಥಳದೊಂದಿಗೆ SMS ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಕಳುಹಿಸಲಾಗುತ್ತದೆ';
+
+  @override
+  String get emergencyAboutPoint5 =>
+      'ಇಂಟರ್ನೆಟ್ ಇಲ್ಲದೆಯೂ ಕೆಲಸ ಮಾಡುತ್ತದೆ (SMS ಮೂಲಕ)';
+
+  @override
+  String get emergencyAboutPoint6 => 'ಸಂಪರ್ಕ ವಿವರಗಳನ್ನು ನವೀಕರಿತವಾಗಿ ಇರಿಸಿ';
+
+  @override
+  String get receiptDetailTitle => 'ರಸೀದಿ';
+
+  @override
+  String get receiptDetailServiceDetails => 'ಸೇವಾ ವಿವರಗಳು';
+
+  @override
+  String get receiptDetailItemisedCharges => 'ಶುಲ್ಕಗಳ ವಿವರ';
+
+  @override
+  String get receiptDetailPaymentInfo => 'ಪಾವತಿ ಮಾಹಿತಿ';
+
+  @override
+  String get receiptDetailBaseCharge => 'ಮೂಲ ಸೇವಾ ಶುಲ್ಕ';
+
+  @override
+  String get receiptDetailLabour => 'ಕಾರ್ಮಿಕ';
+
+  @override
+  String get receiptDetailCallOut => 'ಕಾಲ್-ಔಟ್ / ಪ್ರಯಾಣ ಶುಲ್ಕ';
+
+  @override
+  String get receiptDetailSpareParts => 'ಬಿಡಿ ಭಾಗಗಳು';
+
+  @override
+  String get receiptDetailSubTotal => 'ಉಪ-ಒಟ್ಟು';
+
+  @override
+  String get receiptDetailGst => 'ಜಿಎಸ್‌ಟಿ (18%)';
+
+  @override
+  String get receiptDetailTotalAmount => 'ಒಟ್ಟು ಮೊತ್ತ';
+
+  @override
+  String get receiptDetailMethod => 'ವಿಧಾನ';
+
+  @override
+  String get receiptDetailStatus => 'ಸ್ಥಿತಿ';
+
+  @override
+  String get receiptDetailTransactionId => 'ವ್ಯವಹಾರ ಐಡಿ';
+
+  @override
+  String get receiptDetailReceiptId => 'ರಸೀದಿ ಐಡಿ';
+
+  @override
+  String get receiptDetailPaidOn => 'ಪಾವತಿಸಿದ ದಿನಾಂಕ';
+
+  @override
+  String get receiptDetailVehicle => 'ವಾಹನ';
+
+  @override
+  String get receiptDetailIssue => 'ಸಮಸ್ಯೆ';
+
+  @override
+  String get receiptDetailLocation => 'ಸ್ಥಳ';
+
+  @override
+  String get receiptDetailMechanic => 'ಮೆಕ್ಯಾನಿಕ್';
+
+  @override
+  String get receiptDetailComplexity => 'ಸಂಕೀರ್ಣತೆ';
+
+  @override
+  String get receiptDetailThankYou =>
+      'ಮೆಕ್‌ರೆಸ್ಕ್ಯೂ ಆಯ್ಕೆ ಮಾಡಿದ್ದಕ್ಕಾಗಿ ಧನ್ಯವಾದಗಳು!';
+
+  @override
+  String get receiptDetailTagline =>
+      'ಸುರಕ್ಷಿತವಾಗಿ ಚಲಾಯಿಸಿ. ನಿಮಗೆ ಬೇಕಾದಾಗ ನಾವು ಇಲ್ಲಿದ್ದೇವೆ.';
+
+  @override
+  String get receiptDetailGstNote =>
+      'ಇದು ಅಂದಾಜು ರಸೀದಿ. ಬಳಸಿದ ನಿಜವಾದ ಬಿಡಿ ಭಾಗಗಳ ಆಧಾರದ ಮೇಲೆ ಅಂತಿಮ ಶುಲ್ಕ ಬದಲಾಗಬಹುದು. GST @ 18% ಸೇರಿದೆ. ವಿವಾದಗಳಿಗೆ support@mechresq.com ಸಂಪರ್ಕಿಸಿ';
+
+  @override
+  String get receiptDetailPdfError =>
+      'PDF ಉತ್ಪಾದಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
+
+  @override
+  String get receiptDetailDownload => 'PDF ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ';
+
+  @override
+  String get receiptDetailGenerating => 'ಉತ್ಪಾದಿಸಲಾಗುತ್ತಿದೆ…';
+
+  @override
+  String get receiptDetailNotFound => 'ರಸೀದಿ ಕಂಡುಬಂದಿಲ್ಲ.';
+
+  @override
+  String get receiptDetailLoadFailed =>
+      'ರಸೀದಿ ಲೋಡ್ ಮಾಡಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
+
+  @override
+  String get receiptDetailPrint => 'ಮುದ್ರಿಸಿ / ಪೂರ್ವಾವಲೋಕನ';
 }

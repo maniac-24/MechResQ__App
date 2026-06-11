@@ -3144,4 +3144,178 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get historyKeepRequest => 'Keep Request';
+
+  @override
+  String get vehicleTypeLabel => 'Vehicle Type';
+
+  @override
+  String get vehicleBrandLabel => 'Brand';
+
+  @override
+  String get vehicleBrandHint => 'e.g., Tata, Toyota';
+
+  @override
+  String get vehicleCustomTypeHint => 'Type Your Vehicle Name';
+
+  @override
+  String get vehicleRegistrationLabel => 'Registration Number';
+
+  @override
+  String get vehicleRegistrationHint => 'XX 00 XX 0000';
+
+  @override
+  String get vehicleFuelTypeLabel => 'Fuel Type';
+
+  @override
+  String get vehicleFuelPetrol => 'Petrol';
+
+  @override
+  String get vehicleFuelDiesel => 'Diesel';
+
+  @override
+  String get vehicleFuelCng => 'CNG';
+
+  @override
+  String get vehicleFuelElectric => 'Electric';
+
+  @override
+  String get vehicleTypeCar => 'Car';
+
+  @override
+  String get vehicleTypeBike => 'Bike';
+
+  @override
+  String get vehicleTypeTruck => 'Truck';
+
+  @override
+  String get vehicleTypeScooter => 'Scooter';
+
+  @override
+  String get vehicleTypeAuto => 'Auto';
+
+  @override
+  String get vehicleTypeBus => 'Bus';
+
+  @override
+  String get vehicleTypeOther => 'Other';
+
+  @override
+  String get vehiclePleaseSelectType => 'Please select a vehicle type';
+
+  @override
+  String get vehiclePleaseEnterType => 'Please enter your vehicle type';
+
+  @override
+  String get emergencyAboutPoint1 => 'Add up to 5 trusted contacts';
+
+  @override
+  String get emergencyAboutPoint2 =>
+      'Contacts are notified during SOS activation';
+
+  @override
+  String get emergencyAboutPoint3 => 'Primary contact is called first';
+
+  @override
+  String get emergencyAboutPoint4 =>
+      'SMS with your location is sent automatically';
+
+  @override
+  String get emergencyAboutPoint5 => 'Works even without internet (via SMS)';
+
+  @override
+  String get emergencyAboutPoint6 => 'Keep contact details updated';
+
+  @override
+  String get receiptDetailTitle => 'Receipt';
+
+  @override
+  String get receiptDetailServiceDetails => 'Service Details';
+
+  @override
+  String get receiptDetailItemisedCharges => 'Itemised Charges';
+
+  @override
+  String get receiptDetailPaymentInfo => 'Payment Information';
+
+  @override
+  String get receiptDetailBaseCharge => 'Base Service Charge';
+
+  @override
+  String get receiptDetailLabour => 'Labour';
+
+  @override
+  String get receiptDetailCallOut => 'Call-Out / Travel Fee';
+
+  @override
+  String get receiptDetailSpareParts => 'Spare Parts';
+
+  @override
+  String get receiptDetailSubTotal => 'Sub-Total';
+
+  @override
+  String get receiptDetailGst => 'GST (18%)';
+
+  @override
+  String get receiptDetailTotalAmount => 'TOTAL AMOUNT';
+
+  @override
+  String get receiptDetailMethod => 'Method';
+
+  @override
+  String get receiptDetailStatus => 'Status';
+
+  @override
+  String get receiptDetailTransactionId => 'Transaction ID';
+
+  @override
+  String get receiptDetailReceiptId => 'Receipt ID';
+
+  @override
+  String get receiptDetailPaidOn => 'Paid On';
+
+  @override
+  String get receiptDetailVehicle => 'Vehicle';
+
+  @override
+  String get receiptDetailIssue => 'Issue';
+
+  @override
+  String get receiptDetailLocation => 'Location';
+
+  @override
+  String get receiptDetailMechanic => 'Mechanic';
+
+  @override
+  String get receiptDetailComplexity => 'Complexity';
+
+  @override
+  String get receiptDetailThankYou => 'Thank you for choosing MechResQ!';
+
+  @override
+  String get receiptDetailTagline =>
+      'Drive safe. We\'re always here when you need us.';
+
+  @override
+  String get receiptDetailGstNote =>
+      'This receipt is an estimate. Final charges may vary based on actual spare parts used. GST @ 18% included. For disputes contact support@mechresq.com';
+
+  @override
+  String get receiptDetailPdfError =>
+      'Could not generate PDF. Please try again.';
+
+  @override
+  String get receiptDetailDownload => 'Download PDF';
+
+  @override
+  String get receiptDetailGenerating => 'Generating…';
+
+  @override
+  String get receiptDetailNotFound => 'Receipt not found.';
+
+  @override
+  String get receiptDetailLoadFailed =>
+      'Failed to load receipt. Please try again.';
+
+  @override
+  String get receiptDetailPrint => 'Print / Preview';
 }

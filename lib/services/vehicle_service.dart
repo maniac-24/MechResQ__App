@@ -13,7 +13,6 @@ class VehicleService {
   // ADD VEHICLE
   // ═══════════════════════════════════════════
 
-  /// Add a new vehicle for a user
   Future<String?> addVehicle({
     required String userId,
     required String name,
@@ -22,23 +21,15 @@ class VehicleService {
     required String model,
     required String year,
     required String licensePlate,
+    String? fuelType,
     File? imageFile,
   }) async {
     try {
       final vehicleId = _firestore.collection('vehicles').doc().id;
-      
-      print('🚗 Adding vehicle: $vehicleId');
-      print('📁 Image file provided: ${imageFile != null}');
-      if (imageFile != null) {
-        print('📁 Image path: ${imageFile.path}');
-      }
 
-      // Upload image to Firebase Storage if provided
       String? imageUrl;
       if (imageFile != null) {
-        print('⬆️ Starting image upload...');
         imageUrl = await _uploadImage(userId, vehicleId, imageFile);
-        print('✅ Image URL: $imageUrl');
       }
 
       final vehicle = Vehicle(
@@ -50,25 +41,20 @@ class VehicleService {
         model: model,
         year: year,
         licensePlate: licensePlate,
+        fuelType: fuelType,
         imageUrl: imageUrl,
         createdAt: DateTime.now(),
       );
-      
-      print('💾 Saving to Firestore with imageUrl: $imageUrl');
 
-      // Save to Firestore
       await _firestore
           .collection('users')
           .doc(userId)
           .collection('vehicles')
           .doc(vehicleId)
           .set(vehicle.toMap());
-      
-      print('✅ Vehicle saved successfully');
 
       return vehicleId;
     } catch (e) {
-      print('❌ Error adding vehicle: $e');
       return null;
     }
   }
