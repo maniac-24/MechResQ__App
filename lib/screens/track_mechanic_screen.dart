@@ -220,11 +220,13 @@ class _TrackMechanicScreenState extends State<TrackMechanicScreen> {
     switch (status) {
       case RequestStatus.onTheWay:
         return TrackingStatus.onTheWay;
-        
+
+      case RequestStatus.arrived:
+      case RequestStatus.inProgress:
       case RequestStatus.completed:
-        // Completed could mean arrived - map to arrived for UI
+        // Mechanic is at (or past reaching) the user's location
         return TrackingStatus.arrived;
-        
+
       case RequestStatus.accepted:
       case RequestStatus.pending:
       case RequestStatus.cancelled:

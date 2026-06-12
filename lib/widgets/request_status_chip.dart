@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
 
-/// Type-safe request status enum aligned with Firestore schema
+/// Type-safe request status enum aligned with the shared `requests`
+/// Firestore schema used by BOTH the user app and the mechanic app.
+///
+/// Unified flow:
+///   pending → accepted → onTheWay → arrived → inProgress → completed
+///   (cancelled can occur at any point)
 enum RequestStatus {
   pending,
   accepted,
   onTheWay,
+  arrived,
+  inProgress,
   completed,
   cancelled,
 }
@@ -20,6 +27,10 @@ extension RequestStatusExtension on RequestStatus {
         return 'ACCEPTED';
       case RequestStatus.onTheWay:
         return 'ON THE WAY';
+      case RequestStatus.arrived:
+        return 'ARRIVED';
+      case RequestStatus.inProgress:
+        return 'IN PROGRESS';
       case RequestStatus.completed:
         return 'COMPLETED';
       case RequestStatus.cancelled:
@@ -31,17 +42,22 @@ extension RequestStatusExtension on RequestStatus {
   bool get isActive {
     return this == RequestStatus.pending ||
         this == RequestStatus.accepted ||
-        this == RequestStatus.onTheWay;
+        this == RequestStatus.onTheWay ||
+        this == RequestStatus.arrived ||
+        this == RequestStatus.inProgress;
   }
 
-  /// Check if request can be tracked (mechanic is en route)
+  /// Check if request can be tracked (mechanic assigned and moving/working)
   bool get isTrackable {
-    return this == RequestStatus.accepted || this == RequestStatus.onTheWay;
+    return this == RequestStatus.accepted ||
+        this == RequestStatus.onTheWay ||
+        this == RequestStatus.arrived ||
+        this == RequestStatus.inProgress;
   }
 
   /// Check if request can be cancelled
   bool get isCancellable {
-    return this == RequestStatus.pending;
+    return this == RequestStatus.pending || this == RequestStatus.accepted;
   }
 
   /// Get semantic color from ColorScheme
@@ -51,6 +67,10 @@ extension RequestStatusExtension on RequestStatus {
         return scheme.primary;
       case RequestStatus.onTheWay:
         return scheme.tertiary;
+      case RequestStatus.arrived:
+        return scheme.tertiary;
+      case RequestStatus.inProgress:
+        return scheme.secondary;
       case RequestStatus.completed:
         return scheme.secondary;
       case RequestStatus.cancelled:
@@ -61,16 +81,31 @@ extension RequestStatusExtension on RequestStatus {
   }
 }
 
-/// Parse Firestore status string to enum
+/// Parse Firestore status string to enum.
+/// Accepts the unified snake_case scheme plus a few legacy variants
+/// so older requests still display correctly.
 RequestStatus parseRequestStatus(String? status) {
   final normalized = status?.toLowerCase().replaceAll(' ', '_');
-  
+
   switch (normalized) {
     case 'accepted':
       return RequestStatus.accepted;
     case 'on_the_way':
     case 'ontheway':
+    case 'mechanic_en_route':
+    case 'mechanicenroute':
       return RequestStatus.onTheWay;
+    case 'arrived':
+    case 'mechanic_arrived':
+    case 'mechanicarrived':
+      return RequestStatus.arrived;
+    case 'in_progress':
+    case 'inprogress':
+    case 'work_in_progress':
+    case 'workinprogress':
+    case 'in_progress_started': // legacy
+    case 'in_progress_ongoing': // legacy
+      return RequestStatus.inProgress;
     case 'completed':
       return RequestStatus.completed;
     case 'cancelled':
@@ -85,7 +120,7 @@ RequestStatus parseRequestStatus(String? status) {
 class RequestStatusChip extends StatelessWidget {
   final RequestStatus status;
   final double fontSize;
-  
+
   const RequestStatusChip({
     super.key,
     required this.status,
