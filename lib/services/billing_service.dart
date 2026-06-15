@@ -99,6 +99,36 @@ class ServiceBill {
         ),
       ];
 
+  /// Build a display bill from the mechanic's FINAL bill map (stored on the
+  /// request as `finalBill`). Used in payment mode so the customer sees the
+  /// mechanic's actual charges instead of the original auto-estimate.
+  factory ServiceBill.fromFinalBill({
+    required String requestId,
+    required String vehicleType,
+    required String issue,
+    required Map<String, dynamic> fb,
+    double distanceKm = 0,
+  }) {
+    double d(String k) => (fb[k] as num?)?.toDouble() ?? 0;
+    return ServiceBill(
+      requestId: requestId,
+      vehicleType: vehicleType,
+      issueDescription: issue,
+      distanceKm: distanceKm,
+      baseServiceCharge: d('baseServiceCharge'),
+      laborCharge: d('labourCharge'),
+      callOutCharge: d('callOutCharge'),
+      sparePartsEstimate: d('partsTotal'),
+      platformFee: d('platformFee'),
+      subTotal: d('subTotal'),
+      gstAmount: d('gstAmount'),
+      totalAmount: d('totalAmount'),
+      complexityLabel: 'Final',
+      detectedKeywords: const [],
+      generatedAt: DateTime.now(),
+    );
+  }
+
   /// Convert to Firestore-friendly map
   Map<String, dynamic> toMap() => {
         'requestId': requestId,

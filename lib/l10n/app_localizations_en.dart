@@ -3126,8 +3126,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Service completed. View your bill and pay.';
 
   @override
-  String get historyCashPending =>
-      'Cash payment pending. Pay mechanic when service is done.';
+  String get historyCashPending => 'Cash Payment Pending';
 
   @override
   String get historyWaitingMechanic => 'Waiting for a mechanic...';

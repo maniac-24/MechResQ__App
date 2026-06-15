@@ -3159,8 +3159,7 @@ class AppLocalizationsKn extends AppLocalizations {
       'ಸೇವೆ ಪೂರ್ಣಗೊಂಡಿದೆ. ನಿಮ್ಮ ಬಿಲ್ ವೀಕ್ಷಿಸಿ ಮತ್ತು ಪಾವತಿಸಿ.';
 
   @override
-  String get historyCashPending =>
-      'ನಗದು ಪಾವತಿ ಬಾಕಿ ಇದೆ. ಸೇವೆ ಮುಗಿದ ನಂತರ ಮೆಕ್ಯಾನಿಕ್‌ಗೆ ಪಾವತಿಸಿ.';
+  String get historyCashPending => 'ನಗದು ಪಾವತಿ ಬಾಕಿ ಇದೆ';
 
   @override
   String get historyWaitingMechanic => 'ಮೆಕ್ಯಾನಿಕ್‌ಗಾಗಿ ಕಾಯಲಾಗುತ್ತಿದೆ...';

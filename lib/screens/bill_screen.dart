@@ -9,6 +9,7 @@
 
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
@@ -47,7 +48,8 @@ class BillScreen extends StatefulWidget {
 }
 
 class _BillScreenState extends State<BillScreen> {
-  late final ServiceBill _bill;
+  late ServiceBill _bill;
+  bool _isFinalBill = false;
   final RazorpayService _razorpayService = RazorpayService();
   final RequestFirestoreService _requestService = RequestFirestoreService();
 
@@ -64,11 +66,41 @@ class _BillScreenState extends State<BillScreen> {
       distanceKm: widget.distanceKm,
     );
 
+    // In payment mode, prefer the mechanic's actual final bill if present.
+    if (widget.mode == BillMode.payment) {
+      _loadFinalBill();
+    }
+
     _razorpayService.initialize(
       onPaymentSuccess: _handleRazorpaySuccess,
       onPaymentError: _handleRazorpayError,
       onExternalWallet: _handleExternalWallet,
     );
+  }
+
+  Future<void> _loadFinalBill() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('requests')
+          .doc(widget.requestId)
+          .get();
+      final fb = doc.data()?['finalBill'];
+      if (fb is Map<String, dynamic> && fb.isNotEmpty) {
+        if (!mounted) return;
+        setState(() {
+          _bill = ServiceBill.fromFinalBill(
+            requestId: widget.requestId,
+            vehicleType: widget.vehicleType,
+            issue: widget.issueDescription,
+            fb: fb,
+            distanceKm: widget.distanceKm,
+          );
+          _isFinalBill = true;
+        });
+      }
+    } catch (e) {
+      developer.log('finalBill load error: $e', name: 'BillScreen');
+    }
   }
 
   @override
@@ -131,6 +163,41 @@ class _BillScreenState extends State<BillScreen> {
 
   // ─── PAY BY CASH ──────────────────────────────────────────
 
+  /// User chose cash. The bill is recorded as pending until the mechanic
+  /// confirms they physically received the cash (which then generates the
+  /// receipt and accrues the platform's dues to the mechanic).
+  Future<void> _markCashPending() async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('requests')
+          .doc(widget.requestId)
+          .update({
+        'billStatus': 'cash_pending',
+        'paidVia': 'cash',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      developer.log('cash pending error: $e', name: 'BillScreen');
+    }
+  }
+
+  /// Digital payment succeeded — mark the request paid immediately.
+  Future<void> _settleRequestPaid({required bool cash}) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('requests')
+          .doc(widget.requestId)
+          .update({
+        'billStatus': 'paid',
+        'paidVia': cash ? 'cash' : 'digital',
+        'paidAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      developer.log('settle error: $e', name: 'BillScreen');
+    }
+  }
+
   Future<void> _payCash() async {
     final l10n = AppLocalizations.of(context)!;
     setState(() => _isProcessing = true);
@@ -145,6 +212,7 @@ class _BillScreenState extends State<BillScreen> {
       );
       final receiptId = await ReceiptService.createReceipt(receipt);
       developer.log('💵 Cash receipt created: $receiptId', name: 'BillScreen');
+      await _markCashPending();
       if (mounted) {
         _showCashConfirmation(receiptId);
       }
@@ -210,6 +278,7 @@ class _BillScreenState extends State<BillScreen> {
           razorpayOrderId: res.orderId,
         );
       }
+      await _settleRequestPaid(cash: false);
       if (mounted) {
         _navigateToReceiptSuccess(_pendingReceiptId ?? '', res.paymentId ?? '');
       }
@@ -262,9 +331,14 @@ class _BillScreenState extends State<BillScreen> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(children: [
-          const Icon(Icons.payments_outlined, color: Colors.teal, size: 28),
+          const Icon(Icons.payments_outlined, color: Colors.teal, size: 26),
           const SizedBox(width: 10),
-          Text(l10n.billCashPaymentSelected),
+          Expanded(
+            child: Text(
+              l10n.billCashPaymentSelected,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ),
         ]),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -353,6 +427,35 @@ class _BillScreenState extends State<BillScreen> {
                       _buildEstimateInfoBanner(scheme, l10n),
                     if (widget.mode == BillMode.estimate)
                       const SizedBox(height: 16),
+
+                    // Final bill banner (mechanic's actual charges)
+                    if (_isFinalBill) ...[
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: scheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.verified_outlined,
+                                size: 18, color: scheme.onPrimaryContainer),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Final bill from the mechanic',
+                                style: TextStyle(
+                                  color: scheme.onPrimaryContainer,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
 
                     // Request summary
                     _buildRequestSummaryCard(scheme, l10n),

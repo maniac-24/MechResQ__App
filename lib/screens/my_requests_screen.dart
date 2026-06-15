@@ -8,7 +8,7 @@ import '../services/receipt_service.dart';
 import '../utils/snackbar_helper.dart';
 import '../widgets/request_status_chip.dart' as chip;
 import '../models/receipt.dart';
-import 'request_tracking_screen.dart';
+import 'track_mechanic_screen.dart';
 import 'receipt_detail_screen.dart';
 import 'bill_screen.dart';
 
@@ -76,46 +76,6 @@ class _MyRequestsScreenState extends State<MyRequestsScreen>
 
   // ─── delete all history ──────────────────────────────────
 
-  Future<void> _deleteAllHistory() async {
-    final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.historyDeleteAll),
-        content: Text(l10n.historyDeleteAllConfirm),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(l10n.cancel)),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red, foregroundColor: Colors.white),
-            child: Text(l10n.historyDeleteAllButton),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
-    try {
-      final all = await _requestService.getUserRequestsStream().first;
-      int count = 0;
-      for (final r in all) {
-        final s = (r['status'] ?? '').toString().toLowerCase();
-        if (s == 'completed' || s == 'cancelled') {
-          final id = r['requestId'] ?? r['id'] ?? '';
-          if (id.isNotEmpty) {
-            await _requestService.deleteRequest(id);
-            count++;
-          }
-        }
-      }
-      if (mounted) SnackBarHelper.showSuccess(context, l10n.historyDeleteAllSuccess(count));
-    } catch (e) {
-      if (mounted) SnackBarHelper.showError(context, '${l10n.error}: ${e.toString()}');
-    }
-  }
-
   // ─── cancel active request ───────────────────────────────
 
   void _confirmCancel(String requestId) {
@@ -176,7 +136,6 @@ class _MyRequestsScreenState extends State<MyRequestsScreen>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final scheme = Theme.of(context).colorScheme;
-    final onHistory = _tabController.index == 1;
 
     final tabBar = TabBar(
       controller: _tabController,
@@ -256,16 +215,6 @@ class _MyRequestsScreenState extends State<MyRequestsScreen>
       appBar: AppBar(
         title: Text(l10n.myRequests),
         bottom: tabBar,
-        // Delete-sweep only appears when History tab is selected
-        actions: onHistory
-            ? [
-                IconButton(
-                  icon: const Icon(Icons.delete_sweep_outlined),
-                  tooltip: l10n.historyDeleteAll,
-                  onPressed: _deleteAllHistory,
-                ),
-              ]
-            : [],
       ),
       body: body,
     );
@@ -398,7 +347,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen>
                     context,
                     MaterialPageRoute(
                       builder: (_) =>
-                          RequestTrackingScreen(requestId: requestId),
+                          TrackMechanicScreen(requestId: requestId),
                     ),
                   ),
                   icon: const Icon(Icons.map_outlined, size: 20),

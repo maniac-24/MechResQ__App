@@ -6059,7 +6059,7 @@ abstract class AppLocalizations {
   /// No description provided for @historyCashPending.
   ///
   /// In en, this message translates to:
-  /// **'Cash payment pending. Pay mechanic when service is done.'**
+  /// **'Cash Payment Pending'**
   String get historyCashPending;
 
   /// No description provided for @historyWaitingMechanic.

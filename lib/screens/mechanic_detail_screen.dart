@@ -20,7 +20,6 @@ class MechanicDetailScreen extends StatelessWidget {
         ? mechanic['serviceTypes']!.trim()
         : (mechanic['vehicleTypes'] ?? 'General Repair').trim();
 
-    final phone = (mechanic['phone'] ?? 'N/A').trim();
     final rating = (mechanic['rating'] ?? '4.5').trim();
     final distance = (mechanic['distanceKm'] ?? '0.0').trim();
 
@@ -29,15 +28,6 @@ class MechanicDetailScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(name),
-        actions: [
-          IconButton(
-            tooltip: l10n.call,
-            icon: const Icon(Icons.call),
-            onPressed: phone == 'N/A'
-                ? null
-                : () => _showCallConfirmation(context, phone),
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -155,23 +145,20 @@ class MechanicDetailScreen extends StatelessWidget {
               child: Row(
                 children: [
                   Icon(
-                    Icons.phone_android,
+                    Icons.lock_outline,
                     color: scheme.onSurface.withOpacity(0.7),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      phone,
-                      style: TextStyle(color: scheme.onSurface),
+                      'Phone number is shared after the mechanic accepts '
+                      'your request. Create a request to get connected.',
+                      style: TextStyle(
+                        color: scheme.onSurface.withOpacity(0.75),
+                        fontSize: 13,
+                      ),
                     ),
                   ),
-                  TextButton.icon(
-                    onPressed: phone == "N/A"
-                        ? null
-                        : () => _showCallConfirmation(context, phone),
-                    icon: const Icon(Icons.call),
-                    label: Text(l10n.call),
-                  )
                 ],
               ),
             ),
@@ -235,46 +222,6 @@ class MechanicDetailScreen extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showCallConfirmation(BuildContext context, String phone) {
-    final l10n = AppLocalizations.of(context)!;
-    final scheme = Theme.of(context).colorScheme;
-    
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: scheme.surface,
-        title: Text(
-          l10n.callMechanic,
-          style: TextStyle(color: scheme.onSurface),
-        ),
-        content: Text(
-          l10n.doYouWantToCall(phone),
-          style: TextStyle(color: scheme.onSurface.withOpacity(0.8)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.cancel),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: scheme.primary,
-              foregroundColor: scheme.onPrimary,
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-              SnackBarHelper.showInfo(
-                context,
-                l10n.calling(phone),
-              );
-            },
-            child: Text(l10n.call),
-          ),
-        ],
       ),
     );
   }

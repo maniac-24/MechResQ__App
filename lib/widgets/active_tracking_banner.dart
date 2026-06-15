@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/request_tracking.dart';
-import '../screens/request_tracking_screen.dart';
+import '../screens/track_mechanic_screen.dart';
 
 /// Active Tracking Banner Widget
 /// Shows a prominent banner for active requests with real-time updates
@@ -66,7 +66,7 @@ class ActiveTrackingBanner extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => RequestTrackingScreen(requestId: tracking.requestId),
+            builder: (_) => TrackMechanicScreen(requestId: tracking.requestId),
           ),
         );
       },
@@ -251,7 +251,7 @@ class ActiveTrackingBanner extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => RequestTrackingScreen(
+                      builder: (_) => TrackMechanicScreen(
                         requestId: tracking.requestId,
                       ),
                     ),

@@ -1533,7 +1533,7 @@
   },
   "historyViewBillPay": "View Bill & Pay",
   "historyServiceCompleted": "Service completed. View your bill and pay.",
-  "historyCashPending": "Cash payment pending. Pay mechanic when service is done.",
+  "historyCashPending": "Cash Payment Pending",
   "historyWaitingMechanic": "Waiting for a mechanic...",
   "historyViewEstimateCancel": "View Estimate & Cancel",
   "historyTrackOnMap": "Track on Map",

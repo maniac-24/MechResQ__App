@@ -1,16 +1,16 @@
 // lib/screens/track_mechanic_screen.dart
 
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 
 import '../utils/snackbar_helper.dart';
+import '../utils/map_config.dart';
+import '../services/routing_service.dart';
 import '../widgets/request_status_chip.dart'; // RequestStatus enum
-import 'live_tracking_map_screen.dart';
 import 'user_mechanic_detail_screen.dart';
 import 'chat_mechanic_screen.dart';
 import '../l10n/app_localizations.dart';
@@ -32,105 +32,44 @@ class TrackMechanicScreen extends StatefulWidget {
 
 class _TrackMechanicScreenState extends State<TrackMechanicScreen> {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-  GoogleMapController? _mapController;
+  final MapController _mapController = MapController();
+  bool _mapReady = false;
 
-  // Real-time polyline & ETA
-  Set<Polyline> _polylines = {};
+  // Real-time route & ETA (Geoapify)
+  RouteResult? _route;
   String? _etaText;
   double? _distanceKm;
 
   // Marker animation
   LatLng? _lastMechanicPos;
 
-  // Google API key (store in environment variables in production)
-  static const String _googleApiKey = "YOUR_GOOGLE_DIRECTIONS_API_KEY";
-
   @override
   void dispose() {
-    _mapController?.dispose();
+    _mapController.dispose();
     super.dispose();
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // GOOGLE DIRECTIONS API — fetch route + ETA
+  // GEOAPIFY ROUTING — fetch route + ETA (free, no credit card)
   // ──────────────────────────────────────────────────────────────────────────
   Future<void> _fetchRoute({
     required LatLng origin,
     required LatLng destination,
   }) async {
-    final url = Uri.parse(
-      'https://maps.googleapis.com/maps/api/directions/json'
-      '?origin=${origin.latitude},${origin.longitude}'
-      '&destination=${destination.latitude},${destination.longitude}'
-      '&key=$_googleApiKey',
+    final result = await RoutingService.fetchRoute(
+      originLat: origin.latitude,
+      originLng: origin.longitude,
+      destLat: destination.latitude,
+      destLng: destination.longitude,
     );
 
-    try {
-      final response = await http.get(url);
-      if (response.statusCode != 200) return;
+    if (!mounted || result == null) return;
 
-      final data = json.decode(response.body);
-      if (data['status'] != 'OK') return;
-
-      final route = data['routes'][0];
-      final leg = route['legs'][0];
-
-      // Decode polyline
-      final polylinePoints =
-          _decodePolyline(route['overview_polyline']['points']);
-
-      if (!mounted) return;
-
-      final scheme = Theme.of(context).colorScheme;
-
-      setState(() {
-        _polylines = {
-          Polyline(
-            polylineId: const PolylineId('route'),
-            points: polylinePoints,
-            color: scheme.primary,
-            width: 4,
-          ),
-        };
-        _etaText = leg['duration']['text'];
-        _distanceKm = (leg['distance']['value'] as int) / 1000;
-      });
-    } catch (e) {
-      debugPrint('Directions API error: $e');
-    }
-  }
-
-  // ──────────────────────────────────────────────────────────────────────────
-  // Polyline decoder
-  // ──────────────────────────────────────────────────────────────────────────
-  List<LatLng> _decodePolyline(String encoded) {
-    List<LatLng> points = [];
-    int index = 0, len = encoded.length;
-    int lat = 0, lng = 0;
-
-    while (index < len) {
-      int b, shift = 0, result = 0;
-      do {
-        b = encoded.codeUnitAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
-      lat += dlat;
-
-      shift = 0;
-      result = 0;
-      do {
-        b = encoded.codeUnitAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
-      lng += dlng;
-
-      points.add(LatLng(lat / 1E5, lng / 1E5));
-    }
-    return points;
+    setState(() {
+      _route = result;
+      _etaText = '${result.durationMinutes} min';
+      _distanceKm = result.distanceKm;
+    });
   }
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -168,31 +107,84 @@ class _TrackMechanicScreenState extends State<TrackMechanicScreen> {
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Camera bounds to fit both markers
+  // Camera bounds to fit both markers (+ route)
   // ──────────────────────────────────────────────────────────────────────────
   void _fitBounds(LatLng userPos, LatLng mechanicPos) {
-    if (_mapController == null) return;
-
-    final bounds = LatLngBounds(
-      southwest: LatLng(
-        userPos.latitude < mechanicPos.latitude
-            ? userPos.latitude
-            : mechanicPos.latitude,
-        userPos.longitude < mechanicPos.longitude
-            ? userPos.longitude
-            : mechanicPos.longitude,
-      ),
-      northeast: LatLng(
-        userPos.latitude > mechanicPos.latitude
-            ? userPos.latitude
-            : mechanicPos.latitude,
-        userPos.longitude > mechanicPos.longitude
-            ? userPos.longitude
-            : mechanicPos.longitude,
+    if (!_mapReady) return;
+    final pts = <LatLng>[
+      userPos,
+      mechanicPos,
+      ...?_route?.points,
+    ];
+    final distinct = pts.toSet().toList();
+    if (distinct.length < 2) {
+      _mapController.move(userPos, 15);
+      return;
+    }
+    _mapController.fitCamera(
+      CameraFit.coordinates(
+        coordinates: distinct,
+        padding: const EdgeInsets.all(50),
+        maxZoom: 16,
       ),
     );
+  }
 
-    _mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 80));
+  /// Full-screen live map: route polyline + user & mechanic markers.
+  Widget _buildMap(
+      ColorScheme scheme, LatLng userPos, LatLng mechanicPos, bool hasLive) {
+    return FlutterMap(
+      mapController: _mapController,
+      options: MapOptions(
+        initialCenter: hasLive ? mechanicPos : userPos,
+        initialZoom: 14,
+        maxZoom: 18,
+        minZoom: 3,
+        onMapReady: () {
+          _mapReady = true;
+          if (hasLive) {
+            _fitBounds(userPos, _lastMechanicPos ?? mechanicPos);
+          } else {
+            _mapController.move(userPos, 15);
+          }
+        },
+      ),
+      children: [
+        TileLayer(
+          urlTemplate: isMapConfigured ? kMapTileUrl : kOsmTileUrl,
+          userAgentPackageName: 'com.aistudio.mechresq.mchras',
+        ),
+        if (hasLive && _route != null && _route!.points.isNotEmpty)
+          PolylineLayer(
+            polylines: [
+              Polyline(
+                points: _route!.points,
+                strokeWidth: 5,
+                color: scheme.primary,
+              ),
+            ],
+          ),
+        MarkerLayer(
+          markers: [
+            Marker(
+              point: userPos,
+              width: 44,
+              height: 44,
+              child: const Icon(Icons.person_pin_circle,
+                  color: Colors.blue, size: 40),
+            ),
+            if (hasLive)
+              Marker(
+                point: _lastMechanicPos ?? mechanicPos,
+                width: 44,
+                height: 44,
+                child: const Icon(Icons.build_circle,
+                    color: Colors.orange, size: 38),
+              ),
+          ],
+        ),
+      ],
+    );
   }
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -206,32 +198,6 @@ class _TrackMechanicScreenState extends State<TrackMechanicScreen> {
     } else {
       if (!mounted) return;
       SnackBarHelper.showError(context, l10n.cannotLaunchDialer);
-    }
-  }
-
-  /// Map RequestStatus (business layer) to TrackingStatus (UI layer)
-  /// 
-  /// Design notes:
-  /// - RequestStatus.onTheWay maps to TrackingStatus.onTheWay
-  /// - TrackingStatus.arrived exists but RequestStatus does not have "arrived"
-  /// - If Firestore contains "arrived", parseRequestStatus() defaults to pending
-  /// - All other states default to TrackingStatus.onTheWay for safety
-  TrackingStatus _mapToTrackingStatus(RequestStatus status) {
-    switch (status) {
-      case RequestStatus.onTheWay:
-        return TrackingStatus.onTheWay;
-
-      case RequestStatus.arrived:
-      case RequestStatus.inProgress:
-      case RequestStatus.completed:
-        // Mechanic is at (or past reaching) the user's location
-        return TrackingStatus.arrived;
-
-      case RequestStatus.accepted:
-      case RequestStatus.pending:
-      case RequestStatus.cancelled:
-      default:
-        return TrackingStatus.onTheWay;
     }
   }
 
@@ -351,45 +317,54 @@ class _TrackMechanicScreenState extends State<TrackMechanicScreen> {
               final rating = (mechData['rating'] as num?)?.toDouble() ?? 4.5;
               final totalReviews = mechData['totalReviews'] as int? ?? 0;
 
-              if (liveLat == null || liveLng == null) {
-                final l10n = AppLocalizations.of(context)!;
-                return Center(
-                  child: Text(
-                    l10n.userLocationNotAvailable,
-                    style: TextStyle(color: scheme.onSurface.withOpacity(0.7)),
-                  ),
-                );
-              }
-
-              final mechanicPos = LatLng(liveLat, liveLng);
+              final hasLive = liveLat != null && liveLng != null;
+              // When the live location isn't available (e.g. the mechanic has
+              // arrived and stopped sharing GPS), fall back to the customer's
+              // own location so the map still renders instead of erroring out.
+              final mechanicPos = (liveLat != null && liveLng != null)
+                  ? LatLng(liveLat, liveLng)
+                  : userPos;
               final l10n = AppLocalizations.of(context)!;
 
-              // Offline detection (2 min threshold)
+              // Offline detection (2 min threshold) — only meaningful if live.
               final now = DateTime.now();
-              final isOffline = lastUpdated == null ||
-                  now.difference(lastUpdated).inMinutes > 2;
+              final isOffline = hasLive &&
+                  (lastUpdated == null ||
+                      now.difference(lastUpdated).inMinutes > 2);
 
-              // Fetch route once mechanic position changes
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (_lastMechanicPos == null ||
-                    _lastMechanicPos!.latitude != mechanicPos.latitude ||
-                    _lastMechanicPos!.longitude != mechanicPos.longitude) {
-                  _animateMechanicMarker(mechanicPos);
-                  _fetchRoute(origin: mechanicPos, destination: userPos);
-                }
-              });
+              // Fetch route + animate the marker only when truly live.
+              if (hasLive) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (_lastMechanicPos == null ||
+                      _lastMechanicPos!.latitude != mechanicPos.latitude ||
+                      _lastMechanicPos!.longitude != mechanicPos.longitude) {
+                    _animateMechanicMarker(mechanicPos);
+                    _fetchRoute(origin: mechanicPos, destination: userPos);
+                  }
+                });
+              }
 
-              // UI LAYOUT
-              return SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // STATUS TIMELINE
-                    _StatusTimeline(status: status, scheme: scheme),
+              // UI LAYOUT — full-screen map + draggable info sheet
+              return Stack(
+                children: [
+                  // ── Full-screen live map ─────────────────────────
+                  Positioned.fill(
+                    child: _buildMap(scheme, userPos, mechanicPos, hasLive),
+                  ),
 
-                    // OFFLINE BANNER
-                    if (isOffline)
-                      Container(
+                  // ── Top overlay: timeline + offline banner ───────
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: Column(
+                      children: [
+                        // STATUS TIMELINE
+                        _StatusTimeline(status: status, scheme: scheme),
+
+                        // OFFLINE BANNER
+                        if (isOffline)
+                          Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         color: scheme.errorContainer,
@@ -413,41 +388,78 @@ class _TrackMechanicScreenState extends State<TrackMechanicScreen> {
                         ),
                       ),
 
-                    // GOOGLE MAP
-                    SizedBox(
-                      height: 210,
-                      child: GoogleMap(
-                        onMapCreated: (controller) {
-                          _mapController = controller;
-                          _fitBounds(userPos, _lastMechanicPos ?? mechanicPos);
-                        },
-                        initialCameraPosition: CameraPosition(
-                          target: mechanicPos,
-                          zoom: 14,
-                        ),
-                        markers: {
-                          // User marker
-                          Marker(
-                            markerId: const MarkerId('user'),
-                            position: userPos,
-                            icon: BitmapDescriptor.defaultMarkerWithHue(
-                                BitmapDescriptor.hueBlue),
-                            infoWindow: InfoWindow(title: l10n.you),
+                        // No-live-GPS banner (mechanic arrived / locating)
+                        if (!hasLive)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            color: scheme.secondaryContainer,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  (status == RequestStatus.arrived ||
+                                          status == RequestStatus.inProgress)
+                                      ? Icons.check_circle
+                                      : Icons.my_location,
+                                  color: scheme.onSecondaryContainer,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Text(
+                                    (status == RequestStatus.arrived ||
+                                            status == RequestStatus.inProgress)
+                                        ? 'Your mechanic has arrived'
+                                        : 'Locating your mechanic...',
+                                    style: TextStyle(
+                                      color: scheme.onSecondaryContainer,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          // Mechanic marker (animated position)
-                          Marker(
-                            markerId: const MarkerId('mechanic'),
-                            position: _lastMechanicPos ?? mechanicPos,
-                            icon: BitmapDescriptor.defaultMarkerWithHue(
-                                BitmapDescriptor.hueYellow),
-                            infoWindow: InfoWindow(title: mechanicName),
-                          ),
-                        },
-                        polylines: _polylines,
-                        myLocationButtonEnabled: false,
-                        zoomControlsEnabled: false,
-                      ),
+
+                      ],
                     ),
+                  ),
+
+                  // ── Draggable info sheet ─────────────────────────
+                  DraggableScrollableSheet(
+                    initialChildSize: 0.42,
+                    minChildSize: 0.16,
+                    maxChildSize: 0.9,
+                    builder: (context, scrollController) {
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: scheme.surface,
+                          borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(20)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.15),
+                              blurRadius: 12,
+                              offset: const Offset(0, -3),
+                            ),
+                          ],
+                        ),
+                        child: ListView(
+                          controller: scrollController,
+                          padding: const EdgeInsets.fromLTRB(8, 8, 8, 24),
+                          children: [
+                            Center(
+                              child: Container(
+                                width: 40,
+                                height: 4,
+                                margin: const EdgeInsets.only(bottom: 8),
+                                decoration: BoxDecoration(
+                                  color: scheme.onSurface.withOpacity(0.25),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                            ),
 
                     // ETA PILL
                     Padding(
@@ -491,34 +503,6 @@ class _TrackMechanicScreenState extends State<TrackMechanicScreen> {
                                 fontSize: 13,
                               ),
                             ),
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: scheme.primary,
-                              foregroundColor: scheme.onPrimary,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 6),
-                            ),
-                            onPressed: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => LiveTrackingMapScreen(
-                                  requestId: widget.requestId,
-                                  mechanicName: mechanicName,
-                                  initialDistanceKm: _distanceKm ?? 0,
-                                  initialEtaMinutes: _parseEtaMinutes(_etaText),
-                                  status: _mapToTrackingStatus(status),
-                                ),
-                              ),
-                            ),
-                            icon: const Icon(Icons.fullscreen, size: 17),
-                            label: Text(
-                              l10n.fullMap,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
                         ],
                       ),
                     ),
@@ -586,21 +570,18 @@ class _TrackMechanicScreenState extends State<TrackMechanicScreen> {
                     ),
 
                     const SizedBox(height: 24),
-                  ],
-                ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
               );
             },
           );
         },
       ),
     );
-  }
-
-  // ──────────────────────────────────────────────────────────────────────────
-  int _parseEtaMinutes(String? etaText) {
-    if (etaText == null) return 0;
-    final match = RegExp(r'(\d+)\s*min').firstMatch(etaText);
-    return match != null ? int.tryParse(match.group(1)!) ?? 0 : 0;
   }
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -673,7 +654,7 @@ class _StatusTimeline extends StatelessWidget {
   
   static const _icons = {
     RequestStatus.accepted: Icons.check_circle_outline,
-    RequestStatus.onTheWay: Icons.directions_bike,
+    RequestStatus.onTheWay: Icons.two_wheeler,
     RequestStatus.completed: Icons.star,
   };
 

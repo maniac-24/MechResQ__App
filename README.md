@@ -32,8 +32,10 @@
 
 ### Core Features
 - **Emergency SOS** - Quick access to emergency assistance with one tap
-- **Real-time Location Tracking** - Live mechanic tracking with Google Maps integration
+- **Real-time Location Tracking** - Live mechanic tracking on an OpenStreetMap (flutter_map) map with route and ETA
 - **Find Nearby Mechanics** - Discover mechanics based on your current location
+- **Structured Service Request** - Vehicle type (Car, Bike, Auto, Other) plus brand, model and year so the mechanic brings the right tools
+- **Photo and Video Attachments** - Attach media to a request (uploaded to Cloudinary) that the mechanic can view full-screen
 - **In-app Chat** - Direct communication with assigned mechanics
 - **Ratings and Reviews** - Rate and review mechanic services
 - **Service Request Management** - Create, track, and manage service requests
@@ -41,8 +43,10 @@
 ### Billing and Payments
 - **Smart Bill Screen** - Auto-calculated service estimate shown immediately after request creation
 - **Dynamic Pricing Engine** - Calculates cost based on vehicle type, issue complexity, distance, labour, spare parts, platform fee, and GST (18%)
-- **Pay by Cash or Digitally** - Razorpay integration for digital payments; cash payment flow with confirmation
-- **Digital Receipts** - Instant PDF receipt generation after digital payment
+- **Mechanic Final Bill** - After the service, the mechanic adjusts labour and spare parts and submits a final bill; the customer sees this final bill (not the estimate) before paying
+- **Pay by Cash or Digitally** - Razorpay integration for digital payments; cash uses a confirmation handshake
+- **Cash Confirmation Handshake** - Cash bills stay pending until the mechanic confirms cash received, which then generates the receipt exactly like a digital payment
+- **Digital Receipts** - Instant PDF receipt generation after payment
 - **PDF Download** - Unlimited receipt downloads with MechResQ branding
 - **Payment History** - Full payment history screen with filter options
 
@@ -63,7 +67,7 @@
 - **Multi-language Support** - English and Kannada with full localization coverage
 - **Dark and Light Theme** - Hazard-focused theme with customizable appearance
 - **Push Notifications** - Real-time notifications for service updates with smart navigation
-- **Request History** - View all past service requests with delete options (individual and bulk)
+- **Request History** - View all past service requests with per-item delete (after payment)
 - **SOS History** - Track all emergency events
 - **Legal and Support** - Terms, Privacy Policy, and Help documentation
 
@@ -105,14 +109,19 @@ lib/
 
 ### Backend and Services
 - **Firebase Authentication** - Phone number authentication with SMS OTP
-- **Cloud Firestore** - Real-time NoSQL database
-- **Firebase Storage** - Image and file storage
+- **Cloud Firestore** - Real-time NoSQL database and the bridge between the user and mechanic apps
+- **Cloudinary** - Image and video storage (Firebase Storage avoided; it requires billing)
 - **Firebase Cloud Messaging** - Push notifications
 
 ### Maps and Location
-- **Google Maps Flutter** - Map integration
+- **flutter_map (OpenStreetMap / Geoapify)** - Live mechanic tracking map, route, and ETA
+- **Geoapify Routing API** - Driving route, distance, and ETA (free tier, no card)
+- **Google Maps Flutter** - Used by some legacy map screens; being phased out in favour of flutter_map
 - **Geolocator** - Location services
 - **Geocoding** - Address resolution
+
+### Media Hosting
+- **Cloudinary** - Photos and videos attached to service requests (unsigned upload preset). Firebase Storage is intentionally avoided as it now requires a billing plan.
 
 ### Payments
 - **Razorpay Flutter** - Payment gateway (Test and Live mode support)
@@ -210,7 +219,8 @@ MechResQ_App/
 - Dart SDK 3.10.0 or higher
 - Android Studio or Xcode (for mobile development)
 - Firebase Account (for backend services)
-- Google Maps API Key (for map features)
+- Geoapify API key (free, for map tiles and routing)
+- Cloudinary account (free, for photo/video uploads)
 - Razorpay Account (for payment features)
 
 ### Installation
@@ -272,6 +282,23 @@ static const bool isTestMode = false;
 ```
 
 For test mode, use the test key. For production, replace with your live key from the Razorpay Dashboard.
+
+### Map and Media Configuration (gitignored)
+
+Live tracking and request media use free services configured via local files that
+are excluded from version control. Copy the templates and fill in your values:
+
+```
+lib/utils/map_config.dart          (from map_config.example.dart)
+lib/utils/cloudinary_config.dart    (from cloudinary_config.example.dart)
+```
+
+- **Geoapify** (`map_config.dart`): sign up at geoapify.com (no credit card),
+  create a project, and paste the API key. Used for map tiles and routing. If no
+  key is set, the app falls back to plain OpenStreetMap tiles and straight-line ETA.
+- **Cloudinary** (`cloudinary_config.dart`): create an unsigned upload preset and
+  set the cloud name plus preset name. The `auto` upload endpoint accepts both
+  images and videos.
 
 ---
 
@@ -342,12 +369,12 @@ The app uses the following Firestore collections:
 | Collection | Purpose |
 |---|---|
 | `users` | User profiles |
-| `requests` | Service requests |
-| `requestTracking` | Real-time mechanic tracking |
+| `requests` | Service requests (status, finalBill, billStatus, live tracking source) |
+| `requestTracking` | Legacy tracking collection (retired; tracking now reads `requests` + `mechanics` live GPS) |
 | `payments` | Payment transactions (legacy) |
 | `receipts` | Service receipts (current) |
 | `reviews` | Mechanic ratings and reviews |
-| `mechanics` | Mechanic profiles (read by user app) |
+| `mechanics` | Mechanic profiles + live GPS (`liveLat`/`liveLng`), read by user app |
 | `sosEvents` | SOS emergency events |
 
 ### 5. Firestore Security Rules
@@ -553,11 +580,13 @@ MechResQ uses a hazard-focused theme:
 - [x] User profile and vehicle management
 - [x] SOS emergency features
 - [x] Ratings and reviews system
-- [x] Request history with bulk delete
+- [x] Request history with per-item delete
 
 ### Version 1.1 (Upcoming)
-- [ ] Mechanic app (separate app for mechanics)
-- [ ] Cash payment confirmation by mechanic
+- [x] Mechanic app (separate partner app)
+- [x] Cash payment confirmation by mechanic
+- [x] Open-source map migration (flutter_map + Geoapify) for live tracking
+- [x] Photo and video attachments uploaded to Cloudinary
 - [ ] Auto-trigger review screen after service completion
 - [ ] Real GPS distance passed to billing
 - [ ] FCM token saved to Firestore for server-push notifications

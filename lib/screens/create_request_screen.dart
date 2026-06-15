@@ -11,6 +11,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 
 import '../services/request_firestore_service.dart';
 import '../services/request_tracking_service.dart';
+import '../services/cloudinary_service.dart';
 import '../utils/location_permission_utils.dart';
 import '../utils/snackbar_helper.dart';
 import '../widgets/map_location_picker.dart';
@@ -27,10 +28,13 @@ class CreateRequestScreen extends StatefulWidget {
 
 class _CreateRequestScreenState extends State<CreateRequestScreen> {
   final _descriptionController = TextEditingController();
+  final _vehicleDetailsController = TextEditingController();
+  final _customVehicleController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
-  
+
   String _selectedVehicle = 'Car';
-  final List<String> _attachedFiles = [];
+  bool _showCustomVehicle = false;
+  final List<String> _attachedFiles = []; // absolute file paths
   String? _detectedAddress;
   double? _userLat;
   double? _userLng;
@@ -59,6 +63,8 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
   @override
   void dispose() {
     _descriptionController.dispose();
+    _vehicleDetailsController.dispose();
+    _customVehicleController.dispose();
     super.dispose();
   }
 
@@ -186,6 +192,11 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                   icon: Icons.photo_library,
                   title: l10n.chooseFromGallery,
                   value: 'gallery'),
+              Divider(color: scheme.outlineVariant, height: 1),
+              _fileOption(context,
+                  icon: Icons.videocam,
+                  title: 'Record / choose video',
+                  value: 'video'),
               Divider(color: scheme.outlineVariant, height: 1),
               _fileOption(context,
                   icon: Icons.insert_drive_file,
@@ -322,6 +333,11 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
           source: ImageSource.gallery,
           imageQuality: 85,
         );
+      } else if (fileChoice == 'video') {
+        result = await _picker.pickVideo(
+          source: ImageSource.gallery,
+          maxDuration: const Duration(seconds: 60),
+        );
       } else if (fileChoice == 'file') {
         result = await openFile(
           acceptedTypeGroups: [
@@ -336,7 +352,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
       // Step 4: File selected successfully
       if (result != null && result.path.isNotEmpty) {
         setState(() {
-          _attachedFiles.add(result!.name);
+          _attachedFiles.add(result!.path);
         });
 
         if (!mounted) return;
@@ -456,6 +472,22 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
 
   Future<void> _onSubmit() async {
     final issueText = _descriptionController.text.trim();
+    final vehicleDetails = _vehicleDetailsController.text.trim();
+    final effectiveVehicle = _selectedVehicle == 'Other'
+        ? _customVehicleController.text.trim()
+        : _selectedVehicle;
+
+    if (_selectedVehicle == 'Other' && effectiveVehicle.isEmpty) {
+      SnackBarHelper.showError(context, 'Please enter your vehicle type');
+      return;
+    }
+    if (vehicleDetails.isEmpty) {
+      SnackBarHelper.showError(
+        context,
+        'Please enter your vehicle brand, model & year',
+      );
+      return;
+    }
     if (issueText.isEmpty) {
       SnackBarHelper.showError(
         context,
@@ -480,15 +512,34 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
         mechanicId = _mechanic!['id'];
       }
 
+      // Upload attached media to Cloudinary (free hosting) so the
+      // mechanic can actually view the photos/videos.
+      List<String>? mediaUrls;
+      if (_attachedFiles.isNotEmpty) {
+        try {
+          mediaUrls = await CloudinaryService.uploadAll(
+            _attachedFiles.map((p) => File(p)).toList(),
+            folder: 'requests',
+          );
+        } catch (e) {
+          // Non-fatal: submit the request without media rather than block.
+          if (mounted) {
+            SnackBarHelper.showWarning(
+              context,
+              'Could not upload media, submitting without it.',
+            );
+          }
+        }
+      }
+
       // Create request in Firestore (with lat/lng and optional address)
       final requestId = await _requestService.createRequest(
-        vehicleType: _selectedVehicle,
+        vehicleType: effectiveVehicle,
         issue: issueText,
+        vehicleDetails: vehicleDetails,
         location: _detectedAddress ?? '',
         mechanicId: mechanicId,
-        images: _attachedFiles.isNotEmpty
-            ? List<String>.from(_attachedFiles)
-            : null,
+        images: mediaUrls,
         userLat: _userLat,
         userLng: _userLng,
         locationAddress: _detectedAddress,
@@ -514,6 +565,9 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
       if (mounted) {
         setState(() {
           _descriptionController.clear();
+          _vehicleDetailsController.clear();
+          _customVehicleController.clear();
+          _showCustomVehicle = false;
           _attachedFiles.clear();
           _locationDetected = false;
           _detectedAddress = null;
@@ -529,7 +583,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
           '/bill',
           arguments: {
             'requestId': requestId,
-            'vehicle': _selectedVehicle,
+            'vehicle': effectiveVehicle,
             'issue': issueText,
             'location': _detectedAddress ?? '',
             'distanceKm': 5.0, // default; replaced by real mechanic distance later
@@ -650,8 +704,9 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
       spacing: 8,
       runSpacing: 8,
       children: _attachedFiles.map((f) {
+        final name = f.split(Platform.pathSeparator).last;
         return Chip(
-          label: Text(f),
+          label: Text(name),
           backgroundColor: scheme.surfaceContainerHighest,
           labelStyle: TextStyle(color: scheme.onSurface),
           onDeleted: () => _removeAttached(f),
@@ -668,7 +723,10 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
       final selected = _selectedVehicle == type;
       return Expanded(
         child: GestureDetector(
-          onTap: () => setState(() => _selectedVehicle = type),
+          onTap: () => setState(() {
+            _selectedVehicle = type;
+            _showCustomVehicle = type == 'Other';
+          }),
           child: Container(
             height: 64,
             margin: const EdgeInsets.symmetric(horizontal: 6),
@@ -701,8 +759,9 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
     return Row(
       children: [
         btn('Car', Icons.directions_car, l10n.car),
-        btn('Motorcycle', Icons.motorcycle, l10n.motorcycle),
-        btn('Truck', Icons.local_shipping, l10n.truck),
+        btn('Bike', Icons.two_wheeler, 'Bike'),
+        btn('Auto', Icons.electric_rickshaw, 'Auto'),
+        btn('Other', Icons.more_horiz, 'Other'),
       ],
     );
   }
@@ -768,6 +827,73 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                     ),
                     const SizedBox(height: 10),
                     _vehicleSelector(),
+                    if (_showCustomVehicle) ...[
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _customVehicleController,
+                        style: TextStyle(color: scheme.onSurface),
+                        decoration: InputDecoration(
+                          hintText: 'Enter vehicle type (e.g. Bus, Tractor)',
+                          hintStyle: TextStyle(
+                            color: scheme.onSurface.withValues(alpha: 0.6),
+                          ),
+                          filled: true,
+                          fillColor: scheme.surfaceContainerLowest,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide:
+                                BorderSide(color: scheme.outlineVariant),
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Icon(Icons.confirmation_number_outlined,
+                            color: scheme.primary),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Vehicle Brand, Model & Year',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: scheme.onSurface,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _vehicleDetailsController,
+                      style: TextStyle(color: scheme.onSurface),
+                      textCapitalization: TextCapitalization.words,
+                      decoration: InputDecoration(
+                        hintText: 'e.g. Honda Activa, 2019',
+                        hintStyle: TextStyle(
+                          color: scheme.onSurface.withValues(alpha: 0.6),
+                        ),
+                        helperText:
+                            'Helps the mechanic bring the right tools & parts',
+                        helperStyle: TextStyle(
+                          color: scheme.onSurface.withValues(alpha: 0.5),
+                          fontSize: 11,
+                        ),
+                        filled: true,
+                        fillColor: scheme.surfaceContainerLowest,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: scheme.outlineVariant),
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 14),
                     Row(
                       children: [
