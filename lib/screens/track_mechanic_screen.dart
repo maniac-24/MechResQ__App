@@ -13,6 +13,7 @@ import '../services/routing_service.dart';
 import '../widgets/request_status_chip.dart'; // RequestStatus enum
 import 'user_mechanic_detail_screen.dart';
 import 'chat_mechanic_screen.dart';
+import 'bill_approval_screen.dart';
 import '../l10n/app_localizations.dart';
 
 /// ============================================================================
@@ -253,6 +254,9 @@ class _TrackMechanicScreenState extends State<TrackMechanicScreen> {
           final issue =
               reqData['issueDescription'] ?? reqData['issue'] ?? 'Issue not specified';
           final createdAt = (reqData['createdAt'] as Timestamp?)?.toDate();
+          // Task 2: read billStatus to detect when mechanic submits final bill
+          final billStatus = reqData['billStatus'] as String?;
+          final billReady = billStatus == 'awaiting_payment';
 
           // No mechanic assigned yet
           if (mechanicId == null || mechanicId.isEmpty) {
@@ -541,6 +545,19 @@ class _TrackMechanicScreenState extends State<TrackMechanicScreen> {
                         scheme: scheme,
                       ),
                     ),
+
+                    // BILL-READY BANNER (Task 2)
+                    // Shown when mechanic submits final bill
+                    if (billReady)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        child: _BillReadyBanner(
+                          requestId: widget.requestId,
+                          vehicleType: vehicleType,
+                          issueDescription: issue is String ? issue : issue.toString(),
+                          scheme: scheme,
+                        ),
+                      ),
 
                     // ACTION BUTTONS
                     Padding(
@@ -1066,4 +1083,83 @@ class _Actions extends StatelessWidget {
         icon: Icon(icon, size: 18),
         label: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
       );
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// BILL-READY BANNER (Task 2)
+// ══════════════════════════════════════════════════════════════════════════
+class _BillReadyBanner extends StatelessWidget {
+  final String requestId;
+  final String vehicleType;
+  final String issueDescription;
+  final ColorScheme scheme;
+
+  const _BillReadyBanner({
+    required this.requestId,
+    required this.vehicleType,
+    required this.issueDescription,
+    required this.scheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => BillApprovalScreen(
+            requestId: requestId,
+            vehicleType: vehicleType,
+            issueDescription: issueDescription,
+          ),
+        ),
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: scheme.primaryContainer,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: scheme.primary, width: 1.5),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: scheme.primary,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.receipt_long,
+                  color: scheme.onPrimary, size: 20),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Your mechanic has submitted the bill',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: scheme.onPrimaryContainer,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Tap to review and approve before paying',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: scheme.onPrimaryContainer.withOpacity(0.75),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: scheme.primary),
+          ],
+        ),
+      ),
+    );
+  }
 }

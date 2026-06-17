@@ -20,6 +20,7 @@ import '../services/receipt_service.dart';
 import '../services/request_firestore_service.dart';
 import '../services/razorpay_service.dart';
 import '../core/config/payment_config.dart';
+import 'bill_approval_screen.dart';
 
 enum BillMode { estimate, payment }
 
@@ -56,6 +57,10 @@ class _BillScreenState extends State<BillScreen> {
   bool _isProcessing = false;
   String? _pendingReceiptId;
 
+  // Task 2: live stream of the request doc — used in payment mode to
+  // reactively show the final bill and gate payment on billApproved.
+  late final Stream<DocumentSnapshot> _requestStream;
+
   @override
   void initState() {
     super.initState();
@@ -66,7 +71,14 @@ class _BillScreenState extends State<BillScreen> {
       distanceKm: widget.distanceKm,
     );
 
-    // In payment mode, prefer the mechanic's actual final bill if present.
+    // Stream is set up regardless of mode; only consumed in payment mode.
+    _requestStream = FirebaseFirestore.instance
+        .collection('requests')
+        .doc(widget.requestId)
+        .snapshots();
+
+    // In payment mode, also do a quick one-time load so the bill
+    // renders without waiting for the first stream event.
     if (widget.mode == BillMode.payment) {
       _loadFinalBill();
     }
@@ -892,104 +904,234 @@ class _BillScreenState extends State<BillScreen> {
   }
 
   Widget _buildPaymentButtons(ColorScheme scheme, AppLocalizations l10n) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, -3),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Total reminder
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(l10n.billSubTotal,
+    // Task 2: gate payment behind the live billStatus from Firestore.
+    // Three states:
+    //   1. finalBill absent     → "Waiting for bill…"
+    //   2. billStatus != approved → "Please approve bill first" + open approval screen
+    //   3. billApproved == true  → show Pay Cash / Pay Digitally (unchanged flow)
+    return StreamBuilder<DocumentSnapshot>(
+      stream: _requestStream,
+      builder: (context, snap) {
+        final data = (snap.data?.data() as Map<String, dynamic>?) ?? {};
+        final fb = data['finalBill'] as Map<String, dynamic>?;
+        final billStatus = data['billStatus'] as String?;
+        final approved = billStatus == 'approved' ||
+            billStatus == 'paid' ||
+            billStatus == 'cash_pending';
+
+        // ── State 1: final bill not yet submitted ──
+        if (fb == null || fb.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+            decoration: BoxDecoration(
+              color: scheme.surface,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 12,
+                  offset: const Offset(0, -3),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: scheme.primary),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Waiting for mechanic to submit bill…',
                   style: TextStyle(
-                      fontSize: 14,
-                      color: scheme.onSurface.withValues(alpha: 0.7))),
-              Text(
-                BillingService.formatAmount(_bill.totalAmount),
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: scheme.primary),
+                      color: scheme.onSurface.withValues(alpha: 0.6),
+                      fontSize: 13),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // ── State 2: bill submitted but not approved yet ──
+        if (!approved) {
+          final total = (fb['totalAmount'] as num?)?.toDouble() ?? 0;
+          return Container(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            decoration: BoxDecoration(
+              color: scheme.surface,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 12,
+                  offset: const Offset(0, -3),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Amount Due',
+                        style: TextStyle(
+                            fontSize: 13,
+                            color: scheme.onSurface.withValues(alpha: 0.6))),
+                    Text(
+                      BillingService.formatAmount(total),
+                      style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: scheme.primary),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => BillApprovalScreen(
+                          requestId: widget.requestId,
+                          vehicleType: widget.vehicleType,
+                          issueDescription: widget.issueDescription,
+                          serviceLocation: widget.serviceLocation,
+                          distanceKm: widget.distanceKm,
+                        ),
+                      ),
+                    ),
+                    icon: const Icon(Icons.receipt_long),
+                    label: Text(
+                      'Review & Approve Bill  ${BillingService.formatAmount(total)}',
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.bold),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: scheme.primary,
+                      foregroundColor: scheme.onPrimary,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'You must review and approve the bill before paying',
+                  style: TextStyle(
+                      fontSize: 11,
+                      color: scheme.onSurface.withValues(alpha: 0.45)),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        }
+
+        // ── State 3: approved — show normal payment buttons ──
+        return Container(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          decoration: BoxDecoration(
+            color: scheme.surface,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 12,
+                offset: const Offset(0, -3),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-
-          // Pay by Cash
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: OutlinedButton.icon(
-              onPressed: _isProcessing ? null : _payCash,
-              icon: const Icon(Icons.payments_outlined),
-              label: Text(l10n.billPayByCash,
-                  style: const TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.bold)),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.teal,
-                side: const BorderSide(color: Colors.teal, width: 1.5),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Total reminder
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(l10n.billSubTotal,
+                      style: TextStyle(
+                          fontSize: 14,
+                          color: scheme.onSurface.withValues(alpha: 0.7))),
+                  Text(
+                    BillingService.formatAmount(_bill.totalAmount),
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: scheme.primary),
+                  ),
+                ],
               ),
-            ),
-          ),
-          const SizedBox(height: 10),
+              const SizedBox(height: 12),
 
-          // Pay Digitally
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton.icon(
-              onPressed: _isProcessing ? null : _payDigital,
-              icon: _isProcessing
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white),
-                    )
-                  : const Icon(Icons.credit_card),
-              label: Text(
-                _isProcessing
-                    ? l10n.billProcessing
-                    : '${l10n.billPayDigitally}  ${BillingService.formatAmount(_bill.totalAmount)}',
-                style: const TextStyle(
-                    fontSize: 15, fontWeight: FontWeight.bold),
+              // Pay by Cash
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: OutlinedButton.icon(
+                  onPressed: _isProcessing ? null : _payCash,
+                  icon: const Icon(Icons.payments_outlined),
+                  label: Text(l10n.billPayByCash,
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.bold)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.teal,
+                    side: const BorderSide(color: Colors.teal, width: 1.5),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF6B35),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                elevation: 2,
-              ),
-            ),
-          ),
+              const SizedBox(height: 10),
 
-          const SizedBox(height: 8),
-          Text(
-            PaymentConfig.isTestMode
-                ? l10n.billTestModeNote
-                : l10n.billSecuredByRazorpay,
-            style: TextStyle(
-                fontSize: 11,
-                color: scheme.onSurface.withValues(alpha: 0.45)),
-            textAlign: TextAlign.center,
+              // Pay Digitally
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  onPressed: _isProcessing ? null : _payDigital,
+                  icon: _isProcessing
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Icon(Icons.credit_card),
+                  label: Text(
+                    _isProcessing
+                        ? l10n.billProcessing
+                        : '${l10n.billPayDigitally}  ${BillingService.formatAmount(_bill.totalAmount)}',
+                    style: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF6B35),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    elevation: 2,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 8),
+              Text(
+                PaymentConfig.isTestMode
+                    ? l10n.billTestModeNote
+                    : l10n.billSecuredByRazorpay,
+                style: TextStyle(
+                    fontSize: 11,
+                    color: scheme.onSurface.withValues(alpha: 0.45)),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
