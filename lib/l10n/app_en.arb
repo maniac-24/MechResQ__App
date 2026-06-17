@@ -1332,6 +1332,8 @@
   "fullMap": "Full Map",
   "timelineAccepted": "Accepted",
   "timelineOnTheWay": "On the Way",
+  "timelineArrived": "Arrived",
+  "timelineInProgress": "In Progress",
   "timelineCompleted": "Completed",
   "cannotLaunchDialer": "Cannot launch phone dialer",
   "cancelRequest": "Cancel Request",

@@ -666,34 +666,45 @@ class _StatusTimeline extends StatelessWidget {
   static const _steps = [
     RequestStatus.accepted,
     RequestStatus.onTheWay,
+    RequestStatus.arrived,
+    RequestStatus.inProgress,
     RequestStatus.completed,
   ];
   
   static const _icons = {
-    RequestStatus.accepted: Icons.check_circle_outline,
-    RequestStatus.onTheWay: Icons.two_wheeler,
-    RequestStatus.completed: Icons.star,
+    RequestStatus.accepted:   Icons.check_circle_outline,
+    RequestStatus.onTheWay:   Icons.two_wheeler,
+    RequestStatus.arrived:    Icons.location_on,
+    RequestStatus.inProgress: Icons.build,
+    RequestStatus.completed:  Icons.star,
   };
 
   @override
   Widget build(BuildContext context) {
-    // Handle arrived as onTheWay for timeline display
+    // Map statuses that don't appear in _steps to the nearest step:
+    //   pending  → accepted  (request placed, waiting for mechanic to act)
+    // All other statuses are in the list and map correctly.
     final displayStatus = status == RequestStatus.pending
         ? RequestStatus.accepted
         : status;
-    
+
+    // indexOf returns -1 when the status isn't in _steps (e.g. an unknown
+    // future status). Clamp to 0 so the stepper stays at "Accepted" rather
+    // than crashing or showing a negative index.
     final cur = _steps.indexOf(displayStatus).clamp(0, _steps.length - 1);
     final l10n = AppLocalizations.of(context)!;
     
     final labels = {
-      RequestStatus.accepted: l10n.timelineAccepted,
-      RequestStatus.onTheWay: l10n.timelineOnTheWay,
-      RequestStatus.completed: l10n.timelineCompleted,
+      RequestStatus.accepted:   l10n.timelineAccepted,
+      RequestStatus.onTheWay:   l10n.timelineOnTheWay,
+      RequestStatus.arrived:    l10n.timelineArrived,
+      RequestStatus.inProgress: l10n.timelineInProgress,
+      RequestStatus.completed:  l10n.timelineCompleted,
     };
 
     return Container(
       color: scheme.surfaceContainerHighest,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       child: Row(
         children: List.generate(_steps.length, (i) {
           final done = i <= cur;
@@ -708,8 +719,8 @@ class _StatusTimeline extends StatelessWidget {
                   children: [
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
-                      width: active ? 44 : 34,
-                      height: active ? 44 : 34,
+                      width: active ? 40 : 30,
+                      height: active ? 40 : 30,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: done
@@ -718,23 +729,27 @@ class _StatusTimeline extends StatelessWidget {
                       ),
                       child: Icon(
                         _icons[_steps[i]]!,
-                        size: active ? 22 : 17,
+                        size: active ? 20 : 15,
                         color: done
                             ? scheme.onPrimaryContainer
                             : scheme.onSurface.withOpacity(0.5),
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      labels[_steps[i]]!,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: active ? FontWeight.bold : FontWeight.normal,
-                        color: done
-                            ? scheme.onSurface
-                            : scheme.onSurface.withOpacity(0.5),
+                    const SizedBox(height: 5),
+                    SizedBox(
+                      width: 52,
+                      child: Text(
+                        labels[_steps[i]]!,
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: active ? FontWeight.bold : FontWeight.normal,
+                          color: done
+                              ? scheme.onSurface
+                              : scheme.onSurface.withOpacity(0.5),
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
                       ),
-                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
@@ -742,7 +757,7 @@ class _StatusTimeline extends StatelessWidget {
                   Expanded(
                     child: Container(
                       height: 3,
-                      margin: const EdgeInsets.only(bottom: 24),
+                      margin: const EdgeInsets.only(bottom: 28),
                       decoration: BoxDecoration(
                         color: i < cur
                             ? scheme.primary
