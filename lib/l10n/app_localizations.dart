@@ -5186,6 +5186,18 @@ abstract class AppLocalizations {
   /// **'On the Way'**
   String get timelineOnTheWay;
 
+  /// No description provided for @timelineArrived.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrived'**
+  String get timelineArrived;
+
+  /// No description provided for @timelineInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'In Progress'**
+  String get timelineInProgress;
+
   /// No description provided for @timelineCompleted.
   ///
   /// In en, this message translates to:

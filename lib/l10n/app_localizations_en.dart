@@ -2658,6 +2658,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get timelineOnTheWay => 'On the Way';
 
   @override
+  String get timelineArrived => 'Arrived';
+
+  @override
+  String get timelineInProgress => 'In Progress';
+
+  @override
   String get timelineCompleted => 'Completed';
 
   @override

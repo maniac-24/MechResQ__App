@@ -2686,6 +2686,12 @@ class AppLocalizationsKn extends AppLocalizations {
   String get timelineOnTheWay => 'ದಾರಿಯಲ್ಲಿದ್ದಾರೆ';
 
   @override
+  String get timelineArrived => 'Arrived';
+
+  @override
+  String get timelineInProgress => 'In Progress';
+
+  @override
   String get timelineCompleted => 'ಪೂರ್ಣಗೊಂಡಿದೆ';
 
   @override
